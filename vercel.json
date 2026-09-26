@@ -4,6 +4,9 @@
   "installCommand": "echo bundled",
   "buildCommand": "echo bundled",
   "outputDirectory": "api-static",
+  "regions": [
+    "bom1"
+  ],
   "functions": {
     "api/tick.js": {
       "maxDuration": 60

@@ -57,7 +57,9 @@ with sync_playwright() as p:
         sheet.locator('#ob-title').fill('Live check')
         sheet.get_by_label('Amount in rupees').fill('1')
         sheet.locator('#ob-upi').fill('test@ybl')
-        sheet.locator('#ob-start').fill(dt.date.today().isoformat())
+        # Due tomorrow, so tomorrow's 9 AM "due today" reminder is always in the future.
+        tomorrow = dt.datetime.now(dt.timezone(dt.timedelta(hours=5, minutes=30))).date() + dt.timedelta(days=1)
+        sheet.locator('#ob-start').fill(tomorrow.isoformat())
         sheet.get_by_role('button', name='Add payment').click()
         expect(page.locator('.hero-amount')).to_be_visible(timeout=10000)
 
@@ -68,14 +70,14 @@ with sync_playwright() as p:
         page.wait_for_timeout(4000)
 
         page.get_by_role('button', name='Send a test reminder').click()
-        page.locator('.toast').wait_for(timeout=20000)
-        msg = page.locator('.toast').inner_text()
+        # Wait for the test's own answer, not the "Reminders are on" toast before it.
+        page.locator('.toast', has_text='Sent.').or_(page.locator('.toast.late')).first.wait_for(timeout=25000)
+        msg = page.locator('.toast').first.inner_text()
         assert 'Sent.' in msg, f'test push failed: {msg}'
         print('test push: accepted by push service')
 
-        # 20:00 IST today = 14:30 UTC. Tick a few minutes before.
-        today = dt.datetime.now(dt.timezone(dt.timedelta(hours=5, minutes=30))).date()
-        at = int(dt.datetime(today.year, today.month, today.day, 14, 20, tzinfo=dt.timezone.utc).timestamp() * 1000)
+        # 9:00 IST tomorrow = 03:30 UTC. Tick a few minutes before it.
+        at = int(dt.datetime(tomorrow.year, tomorrow.month, tomorrow.day, 3, 20, tzinfo=dt.timezone.utc).timestamp() * 1000)
         dry = tick(at, dry=True)
         mine = [u for u in dry['users'] if uid.startswith(u['uid'])]
         print('dry tick:', mine)
@@ -99,7 +101,8 @@ with sync_playwright() as p:
         print('account deleted')
     ctx.close()
 
-real_errors = [e for e in errors if 'favicon' not in e]
+# The Apple/Phone availability probes answer 400 while those aren't configured.
+real_errors = [e for e in errors if 'favicon' not in e and 'status of 400' not in e]
 if real_errors:
     print('CONSOLE ERRORS:', *real_errors, sep='\n  ')
     sys.exit(1)

@@ -259,6 +259,16 @@ let statusPromise: Promise<ProviderStatus> | null = null;
 export function providerStatus(): Promise<ProviderStatus> {
   if (import.meta.env.VITE_EMULATORS === '1') return Promise.resolve({ apple: true, phone: true });
   if (!statusPromise) {
+    // Asked at most every 12 hours per device; a "not yet" answer shows up as a 400 in the console.
+    try {
+      const cached = JSON.parse(localStorage.getItem('dueline.providers') || 'null') as (ProviderStatus & { at: number }) | null;
+      if (cached && Date.now() - cached.at < 12 * 3600_000) {
+        statusPromise = Promise.resolve({ apple: cached.apple, phone: cached.phone });
+        return statusPromise;
+      }
+    } catch {
+      // ignore
+    }
     const api = (path: string, body: object) =>
       fetch(`https://identitytoolkit.googleapis.com/v1/${path}?key=${firebaseConfig.apiKey}`, {
         method: 'POST',
@@ -272,7 +282,15 @@ export function providerStatus(): Promise<ProviderStatus> {
       api('accounts:sendVerificationCode', { phoneNumber: '+919000000000', recaptchaToken: 'availability-probe' })
         .then((j) => !/OPERATION_NOT_ALLOWED|BILLING|region/i.test(j.error?.message ?? 'OPERATION_NOT_ALLOWED'))
         .catch(() => false),
-    ]).then(([appleOk, phoneOk]) => ({ apple: appleOk, phone: phoneOk }));
+    ]).then(([appleOk, phoneOk]) => {
+      const status = { apple: appleOk, phone: phoneOk };
+      try {
+        localStorage.setItem('dueline.providers', JSON.stringify({ ...status, at: Date.now() }));
+      } catch {
+        // ignore
+      }
+      return status;
+    });
   }
   return statusPromise;
 }
