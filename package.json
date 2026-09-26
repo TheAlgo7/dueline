@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.api.json --noEmit",
     "test": "vitest run",
     "test:rules": "firebase emulators:exec --only firestore --project dueline-app \"vitest run --config vitest.rules.config.ts\"",
-    "icons": "C:/tmp/webtools/Scripts/python.exe scripts/make-icons.py",
+    "icons": "python scripts/make-icons.py",
     "deploy:web": "npm run build && firebase deploy --only hosting --project dueline-app",
     "deploy:rules": "firebase deploy --only firestore --project dueline-app",
     "deploy:api": "npm run build:api && vercel deploy --prod",

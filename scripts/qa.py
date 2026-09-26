@@ -2,7 +2,7 @@
 
   firebase emulators:start --only auth,firestore --project dueline-app
   VITE_EMULATORS=1 npx vite
-  C:\\tmp\\webtools\\Scripts\\python.exe scripts/qa.py [out-dir]
+  python scripts/qa.py [out-dir]
 
 Every scenario runs even if an earlier one failed; failures get a screenshot.
 """

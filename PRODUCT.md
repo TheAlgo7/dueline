@@ -21,7 +21,7 @@ Family and friends first, then anyone in India who juggles cards, subscriptions 
 
 ## V1 (shipped 2026-09-26)
 
-Fixed and variable amounts (estimates until the bill arrives), one-off and recurring (weekly, monthly incl. last day, quarterly, yearly, every N days/weeks/months/years, ends after N or on a date), manual vs AutoPay, UPI payees, payment links, per-cycle amount / move / snooze / skip, mark paid with reference, undo everywhere, AutoPay confirm, payday forecast, calendar, payees, search, history, Web Push reminders, offline, guest accounts that upgrade in place to email (Google once enabled), export, full account deletion.
+Fixed and variable amounts (estimates until the bill arrives), one-off and recurring (weekly, monthly incl. last day, quarterly, yearly, every N days/weeks/months/years, ends after N or on a date), manual vs AutoPay, UPI payees, payment links, per-cycle amount / move / snooze / skip, mark paid with reference, undo everywhere, AutoPay confirm, payday forecast, calendar, payees, search, history, Web Push reminders, offline, guest accounts that upgrade in place to Google or email, export, full account deletion.
 
 ## Later, deliberately
 

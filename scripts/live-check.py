@@ -1,6 +1,6 @@
 """Production check: the whole reminder pipeline, for real.
 
-  C:\\tmp\\webtools\\Scripts\\python.exe scripts/live-check.py <CRON_SECRET>
+  python scripts/live-check.py <CRON_SECRET>
 
 1. Opens https://dueline-app.web.app as a fresh guest (real Firebase Auth).
 2. Adds a payment due today and turns reminders on (real Web Push subscription).

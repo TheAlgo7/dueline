@@ -1,5 +1,5 @@
-"""Renders every Dueline icon from one SVG mark. Run with the webtools venv:
-C:\tmp\webtools\Scripts\python.exe scripts/make-icons.py
+"""Renders every Dueline icon from one SVG mark (needs Playwright + Chrome):
+python scripts/make-icons.py
 The mark: a "d" drawn as a coin (what's due) and a line."""
 from pathlib import Path
 from playwright.sync_api import sync_playwright

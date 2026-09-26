@@ -1,6 +1,6 @@
 """Sign-in paths against the emulators (dev server with VITE_EMULATORS=1).
 
-  C:\\tmp\\webtools\\Scripts\\python.exe scripts/signin-check.py [out-dir]
+  python scripts/signin-check.py [out-dir]
 
 Google (through the Auth emulator's stand-in Google page), guest -> Google
 linking that keeps the same uid and data, phone codes (read back from the

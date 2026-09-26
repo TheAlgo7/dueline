@@ -1,7 +1,7 @@
 """Redirect sign-in, as installed apps use it (emulators + a dev server started
 with VITE_EMULATORS=1 VITE_SAME_SITE_AUTH=1 on port 5174).
 
-  C:\\tmp\\webtools\\Scripts\\python.exe scripts/redirect-check.py
+  python scripts/redirect-check.py
 
 1. A guest with a payment saves to a new Google account by redirect:
    same uid afterwards, payment still there.

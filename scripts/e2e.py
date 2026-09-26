@@ -2,7 +2,7 @@
 
   firebase emulators:start --only auth,firestore --project dueline-app
   VITE_EMULATORS=1 npx vite
-  C:\\tmp\\webtools\\Scripts\\python.exe scripts/e2e.py [screenshot-dir]
+  python scripts/e2e.py [screenshot-dir]
 
 Walks the real flows as a guest on an Android-sized screen: onboarding, adding
 five kinds of payment, paying one, the item sheet, calendar, payees, You.
