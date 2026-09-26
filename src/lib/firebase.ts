@@ -45,5 +45,6 @@ if (import.meta.env.VITE_EMULATORS === '1') {
   const { connectAuthEmulator } = await import('firebase/auth');
   const { connectFirestoreEmulator } = await import('firebase/firestore');
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  auth.settings.appVerificationDisabledForTesting = true;
   connectFirestoreEmulator(db, '127.0.0.1', 8080);
 }

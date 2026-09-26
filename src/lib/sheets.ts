@@ -15,7 +15,7 @@ export type SheetSpec =
   | { kind: 'payee'; id?: string }
   | { kind: 'search' }
   | { kind: 'history' }
-  | { kind: 'account'; mode?: 'signin' | 'create' }
+  | { kind: 'account'; mode?: 'signin' | 'create'; method?: 'email' | 'phone' }
   | { kind: 'delete' }
   | { kind: 'install' };
 

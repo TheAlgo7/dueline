@@ -74,10 +74,14 @@ Secrets live in `.env.local` (gitignored) and in the Vercel project's production
 
 Manual checks: `curl -H "authorization: Bearer $CRON_SECRET" "https://dueline-api.vercel.app/api/tick?dry=1"` (add `&at=<ms>` to plan as if it were another time).
 
-## One-time console steps (Gaurav)
+## Sign-in
 
-- **Google sign-in (optional).** Firebase console, dueline-app, Authentication, Sign-in method, Google, Enable, choose a support email, Save. Nothing else is needed: sign-in uses popups through `dueline-app.firebaseapp.com`, which the auto-created OAuth client already trusts. Until then the button says Google isn't switched on yet, and guest + email accounts cover everything.
-- **Delete the two empty projects** created by mistake during setup: `duelineapp` and `dueline-in` (Project settings, Delete project).
+Google is the primary button everywhere (white, Google's standard style). Email is always offered as a quiet secondary option; Phone and Apple appear on their own once Firebase reports them usable (`providerStatus()` in `src/lib/auth.ts` asks without signing anyone in or sending an SMS). Guests can start without an account and later save to Google, email, phone or Apple in place, keeping the same uid and data.
+
+Console steps still open (Gaurav):
+- **Phone:** Authentication, Settings, SMS region policy, allow India. SMS may also need the Blaze plan. Until then Firebase refuses to send codes and the button stays hidden.
+- **Apple on the web:** needs a paid Apple Developer account. Create a Services ID with return URL `https://dueline-app.firebaseapp.com/__/auth/handler`, then add the Services ID, Team ID, Key ID and private key under the Apple provider. Until then the button stays hidden.
+- **Delete the two empty projects** created by mistake during setup: `duelineapp` and `dueline-in`.
 
 ## Icons
 

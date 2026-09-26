@@ -320,6 +320,66 @@ button.stat { text-align: left; }
 
 .link-btn { color: var(--accent); font-weight: 600; font-size: 14.5px; padding: 6px 0; }
 
+/* Sign-in. Google is the one bright white pill; everything else is quiet. */
+.btn.google {
+  background: #ffffff;
+  color: #1f1f1f;
+  font-weight: 620;
+  box-shadow: 0 12px 34px -14px oklch(1 0 0 / 0.28);
+}
+.btn.google:hover { background: #f1f1f1; }
+.or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 12px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.alt-ways { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.alt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 540;
+  color: var(--ink-2);
+  transition: background 160ms, color 160ms, border-color 160ms, transform 160ms var(--ease);
+}
+.alt-btn:hover { color: var(--ink); background: var(--bg-1); }
+.alt-btn:active { transform: scale(0.96); }
+.alt-btn[aria-pressed='true'] { background: var(--bg-2); color: var(--ink); border-color: var(--line-2); }
+.link-quiet {
+  display: block;
+  margin: 10px auto 0;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 540;
+  color: var(--ink-3);
+  text-decoration: underline;
+  text-decoration-color: var(--ink-4);
+  text-underline-offset: 3px;
+}
+.link-quiet:hover { color: var(--ink-2); }
+.method-form { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); animation: row-in 320ms var(--ease) both; }
+.phone-input { display: flex; align-items: center; gap: 8px; }
+.phone-input span {
+  flex: none;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  padding: 0 14px;
+  border-radius: var(--r);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  font-size: 16px;
+}
+
 /* ---------------------------------------------------------------- forms */
 
 .field { display: block; margin-top: 18px; }
@@ -690,9 +750,8 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 }
 .welcome h1 em { font-style: normal; color: var(--accent); }
 .welcome-lede { margin-top: 18px; font-size: 17px; line-height: 1.5; color: var(--ink-2); max-width: 34ch; }
-.welcome-demo { margin-top: 34px; border-top: 1px solid var(--line); }
-.welcome-demo .row { animation-duration: 600ms; animation-delay: calc(300ms + var(--i, 0) * 90ms); }
-.welcome-actions { display: grid; gap: 10px; }
+.welcome-actions { display: grid; gap: 14px; }
+.welcome-actions .link-quiet { margin-top: 0; }
 .welcome-fine { margin-top: 16px; font-size: 13px; color: var(--ink-3); text-align: center; }
 
 .wordmark { display: flex; align-items: center; gap: 10px; font-weight: 680; font-size: 19px; letter-spacing: -0.03em; }

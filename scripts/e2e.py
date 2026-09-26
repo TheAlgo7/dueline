@@ -66,10 +66,10 @@ with sync_playwright() as p:
     page.on('pageerror', lambda e: errors.append(f'pageerror: {e}'))
 
     page.goto(BASE)
-    expect(page.get_by_role('heading', name='Everything you need to pay')).to_be_visible()
+    expect(page.get_by_role('button', name='Continue with Google')).to_be_visible()
     shot(page, '01-welcome')
 
-    page.get_by_role('button', name='Get started').click()
+    page.get_by_role('button', name='Try it without an account').click()
     expect(page.get_by_role('heading', name='What do you pay every month?')).to_be_visible(timeout=10000)
     shot(page, '02-onboarding')
 

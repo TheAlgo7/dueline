@@ -5,7 +5,8 @@ import { BellRing, ChevronRight, Download, History, LogOut, Smartphone, Trash2, 
 import { hourLabel, mediumDate, ordinal, todayIn, zoned } from '../core/dates';
 import { planNotices, upcomingNotices } from '../core/notify';
 import { exportData, updateProfile } from '../lib/actions';
-import { signOutEverywhere } from '../lib/auth';
+import { friendlyAuthError, providerLabel, signInWithGoogle, signOutEverywhere } from '../lib/auth';
+import { GoogleButton } from '../ui/SignIn';
 import { disablePush, enablePush, isIOS, isStandalone, pushStatus, sendTestPush, type PushStatus } from '../lib/push';
 import { openSheet } from '../lib/sheets';
 import { useStore } from '../lib/store';
@@ -150,6 +151,7 @@ function NextReminders() {
 }
 
 export function You() {
+  const [saving, setSaving] = useState(false);
   const user = useStore((s) => s.user);
   useStore((s) => s.authVersion);
   const profile = useStore((s) => s.profile);
@@ -171,19 +173,33 @@ export function You() {
               <UserRound size={19} />
             </span>
             <span className="grow">
-              <div>{guest ? 'Guest on this device' : user.displayName || user.email}</div>
+              <div>{guest ? 'Guest on this device' : user.displayName || user.email || user.phoneNumber}</div>
               <div className="toggle-sub">
-                {guest ? 'Your payments are saved on this device only.' : user.email && user.displayName ? user.email : 'Synced across your devices.'}
+                {guest
+                  ? 'Your payments are saved on this device only.'
+                  : `Signed in with ${providerLabel()}${user.displayName && user.email ? ` · ${user.email}` : ''}. Synced across your devices.`}
               </div>
             </span>
           </div>
           {guest ? (
             <div style={{ padding: '14px 0', borderBottom: '1px solid var(--line)' }}>
-              <button type="button" className="btn primary block" onClick={() => openSheet({ kind: 'account', mode: 'create' })}>
-                Save my payments to an account
-              </button>
-              <button type="button" className="btn ghost block" style={{ marginTop: 4 }} onClick={() => openSheet({ kind: 'account', mode: 'signin' })}>
-                I already have an account
+              <GoogleButton
+                label="Save with Google"
+                busy={saving}
+                onClick={async () => {
+                  setSaving(true);
+                  try {
+                    await signInWithGoogle();
+                    toast('Saved to your Google account', { tone: 'paid' });
+                  } catch (e) {
+                    toast(friendlyAuthError(e), { tone: 'late' });
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+              />
+              <button type="button" className="link-quiet" onClick={() => openSheet({ kind: 'account' })}>
+                Use email or another way
               </button>
             </div>
           ) : null}

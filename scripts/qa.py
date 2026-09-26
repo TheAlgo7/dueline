@@ -183,7 +183,7 @@ with sync_playwright() as p:
     state = {}
 
     def s_onboard():
-        page.get_by_role('button', name='Get started').click()
+        page.get_by_role('button', name='Try it without an account').click()
         expect(page.get_by_role('heading', name='What do you pay every month?')).to_be_visible(timeout=10000)
         state['uid'] = uid_of(page)
     scenario(page, 'onboard', s_onboard)
@@ -517,11 +517,12 @@ with sync_playwright() as p:
 
     def s_create_account():
         tab(page, 'You')
-        page.get_by_role('button', name='Save my payments to an account').click()
+        tap(page, page.get_by_role('button', name='Use email or another way'))
         s = top(page)
+        s.get_by_role('button', name='Email').click()
         s.locator('#acc-email').fill(EMAIL)
         s.locator('#acc-pw').fill(PW)
-        s.get_by_role('button', name='Save to this account').click()
+        s.get_by_role('button', name='Save with email').click()
         expect(page.get_by_text(EMAIL)).to_be_visible(timeout=8000)
         assert uid_of(page) == state['uid'], 'linking must keep the same uid'
     scenario(page, 'create_account', s_create_account)
@@ -529,8 +530,8 @@ with sync_playwright() as p:
     def s_signout_signin():
         tab(page, 'You')
         tap(page, page.get_by_role('button', name='Sign out'))
-        expect(page.get_by_role('button', name='Get started')).to_be_visible(timeout=8000)
-        page.get_by_role('button', name='I have an account').click()
+        expect(page.get_by_role('button', name='Continue with Google')).to_be_visible(timeout=8000)
+        page.get_by_role('button', name='Email').click()
         s = top(page)
         s.locator('#acc-email').fill(EMAIL)
         s.locator('#acc-pw').fill(PW)
@@ -542,12 +543,14 @@ with sync_playwright() as p:
     def s_guest_merge():
         tab(page, 'You')
         tap(page, page.get_by_role('button', name='Sign out'))
-        page.get_by_role('button', name='Get started').click()
+        page.get_by_role('button', name='Try it without an account').click()
         expect(page.get_by_role('heading', name='What do you pay every month?')).to_be_visible(timeout=10000)
         add(page, kind='Someone I pay', title='Guest item', amount=100, due=D(1))
         tab(page, 'You')
-        tap(page, page.get_by_role('button', name='I already have an account'))
+        tap(page, page.get_by_role('button', name='Use email or another way'))
         s = top(page)
+        s.get_by_role('button', name='Email').click()
+        s.get_by_role('button', name='I have an account').click()
         s.locator('#acc-email').fill(EMAIL)
         s.locator('#acc-pw').fill(PW)
         s.get_by_role('button', name='Sign in', exact=True).click()
@@ -560,7 +563,7 @@ with sync_playwright() as p:
     def s_wrong_password():
         tab(page, 'You')
         tap(page, page.get_by_role('button', name='Sign out'))
-        page.get_by_role('button', name='I have an account').click()
+        page.get_by_role('button', name='Email').click()
         s = top(page)
         s.locator('#acc-email').fill(EMAIL)
         s.locator('#acc-pw').fill('wrongpass')
@@ -575,7 +578,7 @@ with sync_playwright() as p:
         dp = browser.new_page(viewport={'width': 1280, 'height': 820})
         dp.on('pageerror', lambda e: errors.append(f'desktop pageerror: {e}'))
         dp.goto(BASE)
-        dp.get_by_role('button', name='Get started').click()
+        dp.get_by_role('button', name='Try it without an account').click()
         expect(dp.get_by_role('heading', name='What do you pay every month?')).to_be_visible(timeout=10000)
         dp.get_by_role('button', name='Someone I pay').click()
         dp.wait_for_timeout(500)
@@ -590,7 +593,7 @@ with sync_playwright() as p:
         s.locator('#del-typed').fill('DELETE')
         s.locator('#del-pw').fill(PW)
         s.get_by_role('button', name='Delete my account and data').click()
-        expect(page.get_by_role('button', name='Get started')).to_be_visible(timeout=10000)
+        expect(page.get_by_role('button', name='Continue with Google')).to_be_visible(timeout=10000)
         assert not obligations(state['uid']), 'data should be gone'
     scenario(page, 'delete_account', s_delete_account)
 

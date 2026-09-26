@@ -46,7 +46,7 @@ with sync_playwright() as p:
     page.on('pageerror', lambda e: errors.append(str(e)))
 
     page.goto(SITE)
-    page.get_by_role('button', name='Get started').click()
+    page.get_by_role('button', name='Try it without an account').click()
     expect(page.get_by_role('heading', name='What do you pay every month?')).to_be_visible(timeout=15000)
     uid = page.evaluate("() => new Promise(r => { const req = indexedDB.open('firebaseLocalStorageDb'); req.onsuccess = () => { const tx = req.result.transaction('firebaseLocalStorage'); const all = tx.objectStore('firebaseLocalStorage').getAll(); all.onsuccess = () => r((all.result.find(x => x.value && x.value.uid) || {}).value?.uid); }; })")
     print('guest uid', uid[:6] + '…')
@@ -95,7 +95,7 @@ with sync_playwright() as p:
         page.get_by_role('button', name='Delete everything').click()
         page.locator('#del-typed').fill('DELETE')
         page.get_by_role('button', name='Delete my account and data').click()
-        expect(page.get_by_role('button', name='Get started')).to_be_visible(timeout=20000)
+        expect(page.get_by_role('button', name='Continue with Google')).to_be_visible(timeout=20000)
         print('account deleted')
     ctx.close()
 
