@@ -12,10 +12,12 @@ import { useStore } from '../lib/store';
 import { toast } from '../lib/toast';
 import { Seg, Switch, ToggleRow } from '../ui/controls';
 import { installAvailable, promptInstall, useInstallable } from '../lib/install';
+import { nextReminderText } from '../lib/nextReminder';
 
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 6); // 6 AM to 11 PM
 
 function PushRow() {
+  const guest = useStore((s) => Boolean(s.user?.isAnonymous));
   const [status, setStatus] = useState<PushStatus | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -50,6 +52,7 @@ function PushRow() {
                 if (on) {
                   const s = await enablePush();
                   setStatus(s);
+                  if (s === 'on') toast(nextReminderText(), { tone: 'paid', ms: 6000 });
                   if (s === 'denied') toast('Notifications are blocked in browser settings');
                 } else {
                   await disablePush();
@@ -68,6 +71,11 @@ function PushRow() {
           </button>
         ) : null}
       </div>
+      {status === 'on' && guest ? (
+        <div className="field-help" style={{ padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
+          Reminders follow this account, not the phone. Using Dueline in another browser too? Save to an account and sign in there, or it will be a separate guest with its own payments.
+        </div>
+      ) : null}
       {status === 'on' ? (
         <button
           type="button"

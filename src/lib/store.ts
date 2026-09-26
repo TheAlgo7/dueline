@@ -71,6 +71,15 @@ function stopListening() {
   unsubs = [];
 }
 
+/**
+ * Stop reacting to this account's documents. Called before erasing it: the
+ * first-run profile write could otherwise land after the erase and leave an
+ * orphan profile behind a deleted account.
+ */
+export function detachListeners() {
+  stopListening();
+}
+
 function listen(user: User) {
   stopListening();
   const base = doc(db, 'users', user.uid);

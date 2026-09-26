@@ -13,6 +13,7 @@ import { Glyph, useCountUp } from '../ui/bits';
 import { ItemRow } from '../ui/ItemRow';
 import { go } from '../lib/router';
 import { useOnline } from '../lib/online';
+import { nextReminderText } from '../lib/nextReminder';
 
 function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
@@ -79,7 +80,7 @@ function Banners({ hasItems }: { hasItems: boolean }) {
             onClick={async () => {
               const s = await enablePush().catch(() => 'off' as PushStatus);
               setPush(s);
-              toast(s === 'on' ? 'Reminders are on for this device' : s === 'denied' ? 'Notifications are blocked in browser settings' : 'Reminders stayed off', { tone: s === 'on' ? 'paid' : 'default' });
+              toast(s === 'on' ? nextReminderText() : s === 'denied' ? 'Notifications are blocked in browser settings' : 'Reminders stayed off', { tone: s === 'on' ? 'paid' : 'default', ms: 6000 });
             }}
           >
             Turn on

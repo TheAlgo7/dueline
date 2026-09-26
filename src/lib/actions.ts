@@ -11,7 +11,7 @@ import { occId } from '../core/timeline';
 import type { Item, Obligation, OccurrenceDoc, Paise, Payee, Profile } from '../core/types';
 import { db } from './firebase';
 import { newId } from './ids';
-import { getState, uid } from './store';
+import { detachListeners, getState, uid } from './store';
 import { toast } from './toast';
 
 function userDoc() {
@@ -232,6 +232,7 @@ export async function exportData(): Promise<Blob> {
 /** Deletes every document this person owns. The auth account is removed by the caller. */
 export async function eraseAllData() {
   const base = userDoc();
+  detachListeners();
   for (const name of SUBCOLLECTIONS) {
     const snap = await getDocs(collection(base, name));
     for (let i = 0; i < snap.docs.length; i += 400) {
