@@ -1,0 +1,13 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+.vercel
+*.log
+test-results
+playwright-report
+.firebase
+
+.vercel
+.tmp

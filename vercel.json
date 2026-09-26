@@ -1,0 +1,120 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo bundled",
+  "buildCommand": "echo bundled",
+  "outputDirectory": "api-static",
+  "functions": {
+    "api/tick.js": {
+      "maxDuration": 60
+    },
+    "api/test-push.js": {
+      "maxDuration": 15
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/tick",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/tick",
+      "schedule": "0 23 * * *"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://dueline-app.web.app",
+      "permanent": false
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+rules_version = '2';
+
+// Dueline. Every document lives under users/{uid}; nothing is shared between
+// people. The one exception is the reminder robot: a single email/password
+// account the Vercel cron signs in as, so the server can read schedules and
+// write the "already sent" log without a service-account key (Spark plan).
+// It can read, and it can create `sent` entries and prune dead devices. It can
+// never write money data.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function isRobot() { return signedIn() && request.auth.uid == '1Ukyzsn0xVaPEIKON9ecd9gY8Xu2'; }
+
+    function str(v, max) { return v is string && v.size() <= max; }
+    function optStr(d, k, max) { return !(k in d) || d[k] == null || str(d[k], max); }
+    function paise(v) { return v is int && v >= 0 && v <= 100000000000; }
+    function optPaise(d, k) { return !(k in d) || d[k] == null || paise(d[k]); }
+    function isoDate(v) { return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
+    function optDate(d, k) { return !(k in d) || d[k] == null || isoDate(d[k]); }
+    function stamp(d) { return d.updatedAt is int; }
+
+    function validProfile(d) {
+      return d.keys().hasOnly(['name', 'tz', 'remindHour', 'evening', 'eveningHour',
+                               'autopayCheck', 'payday', 'createdAt', 'updatedAt'])
+        && str(d.tz, 64)
+        && d.remindHour is int && d.remindHour >= 0 && d.remindHour <= 23
+        && d.evening is bool
+        && d.eveningHour is int && d.eveningHour >= 0 && d.eveningHour <= 23
+        && d.autopayCheck in ['ask', 'assume']
+        && (!('payday' in d) || d.payday == null || (d.payday is int && d.payday >= 1 && d.payday <= 31))
+        && optStr(d, 'name', 80)
+        && stamp(d);
+    }
+
+    function validObligation(d) {
+      return str(d.title, 80) && d.title.size() > 0
+        && d.amountType in ['fixed', 'variable']
+        && optPaise(d, 'amount')
+        && d.handling in ['manual', 'auto']
+        && d.method in ['upi', 'card', 'bank', 'cash', 'web']
+        && d.recurrence is map && isoDate(d.recurrence.start)
+        && d.recurrence.freq in ['once', 'days', 'weeks', 'months', 'years']
+        && d.recurrence.interval is int && d.recurrence.interval >= 1 && d.recurrence.interval <= 400
+        && d.remind is list && d.remind.size() <= 6
+        && d.active is bool
+        && optStr(d, 'upi', 120) && optStr(d, 'url', 600) && optStr(d, 'note', 600)
+        && optStr(d, 'account', 80) && optStr(d, 'payTo', 80)
+        && request.resource.size() < 8000
+        && stamp(d);
+    }
+
+    function validOccurrence(d) {
+      return str(d.obligationId, 64) && isoDate(d.due)
+        && (!('status' in d) || d.status == null || d.status in ['paid', 'skipped', 'autopaid', 'failed'])
+        && optPaise(d, 'amount') && optPaise(d, 'paidAmount')
+        && optDate(d, 'moveTo') && optDate(d, 'paidOn') && optDate(d, 'snoozeUntil')
+        && optStr(d, 'ref', 80) && optStr(d, 'via', 40) && optStr(d, 'note', 600) && optStr(d, 'title', 80)
+        && request.resource.size() < 4000
+        && stamp(d);
+    }
+
+    function validPayee(d) {
+      return str(d.name, 80) && d.name.size() > 0
+        && optStr(d, 'upi', 120) && optStr(d, 'phone', 20) && optStr(d, 'url', 600) && optStr(d, 'note', 600)
+        && request.resource.size() < 4000
+        && stamp(d);
+    }
+
+    function validDevice(d) {
+      return str(d.endpoint, 1000) && d.endpoint.matches('^https://.*')
+        && d.keys is map && str(d.keys.p256dh, 200) && str(d.keys.auth, 100)
+        && optStr(d, 'label', 80)
+        && request.resource.size() < 4000;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isRobot();
+      allow create, update: if isOwner(uid) && validProfile(request.resource.data);
+      allow delete: if isOwner(uid);
+
+      match /obligations/{id} {
+        allow read: if isOwner(uid) || isRobot();
+        allow create, update: if isOwner(uid) && validObligation(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+
+      match /occurrences/{id} {
+        allow read: if isOwner(uid) || isRobot();
+        allow create, update: if isOwner(uid) && validOccurrence(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+
+      match /payees/{id} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validPayee(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+
+      // Append-only trail of what happened to money. Owner can erase it only
+      // as part of deleting the account.
+      match /events/{id} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && request.resource.data.at is int
+          && str(request.resource.data.action, 40) && request.resource.size() < 4000;
+        allow update: if false;
+        allow delete: if isOwner(uid);
+      }
+
+      match /devices/{id} {
+        allow read: if isOwner(uid) || isRobot();
+        allow create, update: if isOwner(uid) && validDevice(request.resource.data);
+        allow delete: if isOwner(uid) || isRobot();
+      }
+
+      // Reminder log. The robot creates an entry before it pushes; the id is
+      // the dedupe key, and entries can never be updated, so a second tick in
+      // the same window fails its write and sends nothing.
+      match /sent/{id} {
+        allow read: if isOwner(uid) || isRobot();
+        allow create: if isRobot() && request.resource.data.at is int;
+        allow update: if false;
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    // The tick lists every device across users in one collection-group read.
+    match /{path=**}/devices/{id} {
+      allow read: if isRobot();
+    }
+  }
+}
