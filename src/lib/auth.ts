@@ -15,6 +15,7 @@ import {
   PhoneAuthProvider,
   RecaptchaVerifier,
   linkWithPhoneNumber,
+  linkWithRedirect,
   signInWithPhoneNumber,
   signInWithRedirect,
   type AuthProvider,
@@ -35,10 +36,11 @@ import {
   type AuthCredential,
   type UserCredential,
 } from 'firebase/auth';
-import { auth, firebaseConfig } from './firebase';
+import { SAME_SITE_AUTH, auth, firebaseConfig } from './firebase';
 import { copyInto, eraseAllData } from './actions';
-import { getState, refreshUser } from './store';
-import { disablePush } from './push';
+import { getState, refreshUser, subscribe } from './store';
+import { disablePush, isStandalone } from './push';
+import { toast } from './toast';
 
 export function friendlyAuthError(e: unknown): string {
   const code = (e as { code?: string })?.code ?? '';
@@ -56,7 +58,8 @@ export function friendlyAuthError(e: unknown): string {
     case 'auth/cancelled-popup-request': return 'Sign-in was closed before it finished.';
     case 'auth/popup-blocked': return 'The browser blocked the sign-in window. Allow pop-ups and try again.';
     case 'auth/operation-not-allowed': return 'That sign-in method isn\'t switched on for Dueline yet. Use Google or email.';
-    case 'auth/account-exists-with-different-credential': return 'This email already signs in another way. Use that method.';
+    case 'auth/account-exists-with-different-credential': return 'This account already signs in another way. Use that method.';
+    case 'dueline/phone-in-use': return 'That number already has a Dueline account. Sign out, then sign in with your phone.';
     case 'auth/invalid-phone-number':
     case 'auth/missing-phone-number': return 'Enter a 10-digit mobile number.';
     case 'auth/invalid-verification-code':
@@ -143,12 +146,25 @@ const apple = () => {
 const errCode = (e: unknown) => (e as { code?: string })?.code ?? '';
 
 /**
+ * Linking a guest to a login that already has an account. Firebase reports it
+ * as credential-already-in-use, or email-already-in-use when it matches by the
+ * account's email; either way the guest's data should move into that account.
+ */
+const alreadyAnAccount = (e: unknown) => errCode(e) === 'auth/credential-already-in-use' || errCode(e) === 'auth/email-already-in-use';
+
+/**
  * Popup sign-in for Google and Apple. A guest is linked in place; if the
  * account already exists, the guest's data moves into it. Where popups
  * can't open (some installed iPhone apps) it falls back to a redirect.
  */
 async function oauth(provider: AuthProvider, fromError: (e: never) => AuthCredential | null): Promise<void> {
   const user = auth.currentUser;
+  // Installed apps: the page leaves for Google and completeRedirect() finishes on return.
+  if (useRedirect()) {
+    if (user?.isAnonymous) await linkWithRedirect(user, provider);
+    else await signInWithRedirect(auth, provider);
+    return;
+  }
   if (user?.isAnonymous) {
     try {
       await linkWithPopup(user, provider);
@@ -156,7 +172,7 @@ async function oauth(provider: AuthProvider, fromError: (e: never) => AuthCreden
       refreshUser();
       return;
     } catch (e) {
-      if (errCode(e) !== 'auth/credential-already-in-use') throw e;
+      if (!alreadyAnAccount(e)) throw e;
       const credential = fromError(e as never);
       if (!credential) throw e;
       await switchFromGuest(() => signInWithCredential(auth, credential));
@@ -217,9 +233,9 @@ export async function confirmPhoneCode(confirmation: ConfirmationResult, code: s
       refreshUser();
     }
   } catch (e) {
-    if (errCode(e) !== 'auth/credential-already-in-use') throw e;
+    if (!alreadyAnAccount(e) && errCode(e) !== 'auth/account-exists-with-different-credential') throw e;
     const credential = PhoneAuthProvider.credentialFromError(e as never);
-    if (!credential) throw e;
+    if (!credential) throw Object.assign(new Error('Phone number already in use'), { code: 'dueline/phone-in-use' });
     await switchFromGuest(() => signInWithCredential(auth, credential));
   }
 }
@@ -271,12 +287,59 @@ export function providerLabel(): string {
   return 'Guest';
 }
 
-/** Finishes a redirect sign-in started on a previous page load, if any. */
-export async function completeRedirect(): Promise<void> {
+function useRedirect(): boolean {
+  if (!SAME_SITE_AUTH) return false;
   try {
-    await getRedirectResult(auth);
+    if (localStorage.getItem('dueline.authRedirect') === '1') return true;
   } catch {
-    // Nothing pending, or it failed; the welcome screen lets them retry.
+    // ignore
+  }
+  return isStandalone();
+}
+
+/** Resolves once the signed-in guest's own documents have loaded (or after a few seconds). */
+function guestDataLoaded(): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      unsub();
+      clearTimeout(timer);
+      resolve();
+    };
+    const check = () => {
+      const s = getState();
+      if (s.user?.isAnonymous && s.loaded) done();
+    };
+    const unsub = subscribe(check);
+    const timer = setTimeout(done, 8000);
+    check();
+  });
+}
+
+/**
+ * Finishes a redirect sign-in or link started before the page left for
+ * Google or Apple. If a guest's link found the account already exists, the
+ * guest's payments are moved into it, exactly as the popup path does.
+ */
+export async function completeRedirect(): Promise<void> {
+  const wasGuest = () => Boolean(auth.currentUser?.isAnonymous);
+  try {
+    const result = await getRedirectResult(auth);
+    if (import.meta.env.DEV) console.info('[auth] redirect result', result ? result.operationType : 'none');
+    if (!result) return;
+    refreshUser();
+    toast(wasGuest() ? 'Signed in' : 'Signed in. Your payments sync to this account.', { tone: 'paid' });
+  } catch (e) {
+    if (import.meta.env.DEV) console.info('[auth] redirect result error', errCode(e), (e as Error).message);
+    if (alreadyAnAccount(e)) {
+      const credential = GoogleAuthProvider.credentialFromError(e as never) ?? OAuthProvider.credentialFromError(e as never);
+      if (credential) {
+        await guestDataLoaded();
+        await switchFromGuest(() => signInWithCredential(auth, credential)).catch((err) => toast(friendlyAuthError(err), { tone: 'late' }));
+        toast('Signed in. Your payments came with you.', { tone: 'paid' });
+        return;
+      }
+    }
+    if (errCode(e)) toast(friendlyAuthError(e), { tone: 'late' });
   }
 }
 

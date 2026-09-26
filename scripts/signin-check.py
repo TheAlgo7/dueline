@@ -112,6 +112,31 @@ with sync_playwright() as p:
         sign_out(page)
     scenario(page, 'guest_saved_with_google', s_guest_to_google)
 
+    def s_guest_merges_into_google():
+        # Same Google account as google_sign_in: the guest's payment must move into it.
+        page.get_by_role('button', name='Try it without an account').click()
+        expect(page.get_by_role('heading', name='What do you pay every month?')).to_be_visible(timeout=10000)
+        page.get_by_role('button', name='Someone I pay').click()
+        s = page.get_by_role('dialog')
+        s.locator('#ob-title').fill('Dhobi')
+        s.get_by_label('Amount in rupees').fill('300')
+        s.locator('#ob-start').fill((dt.date.today() + dt.timedelta(days=2)).isoformat())
+        s.get_by_role('button', name='Add payment').click()
+        page.wait_for_timeout(600)
+        page.get_by_role('button', name='You', exact=True).click()
+        page.wait_for_timeout(600)
+        with page.expect_popup() as info:
+            page.get_by_role('button', name='Save with Google').click()
+        pop = info.value
+        pop.wait_for_load_state()
+        # The emulator remembers the account from google_sign_in; pick it.
+        pop.get_by_text(f'g{stamp}@example.com').first.click()
+        expect(page.get_by_text('Signed in with Google')).to_be_visible(timeout=15000)
+        page.get_by_role('button', name='Due', exact=True).click()
+        expect(page.locator('.row-title', has_text='Dhobi')).to_be_visible(timeout=8000)
+        sign_out(page)
+    scenario(page, 'guest_merges_into_existing_google', s_guest_merges_into_google)
+
     def s_phone():
         page.get_by_role('button', name='Try it without an account').click()
         expect(page.get_by_role('heading', name='What do you pay every month?')).to_be_visible(timeout=10000)
@@ -119,11 +144,12 @@ with sync_playwright() as p:
         page.get_by_role('button', name='Use email or another way').click()
         s = page.get_by_role('dialog')
         s.get_by_role('button', name='Phone').click()
-        s.locator('#acc-phone').fill('98765 43210')
+        digits = '98' + str(stamp)[-8:]
+        s.locator('#acc-phone').fill(digits)
         page.screenshot(path=str(OUT / 'sheet-phone.png'))
         s.get_by_role('button', name='Send code').click()
         expect(s.locator('#acc-code')).to_be_visible(timeout=8000)
-        s.locator('#acc-code').fill(phone_code('+919876543210'))
+        s.locator('#acc-code').fill(phone_code('+91' + digits))
         s.get_by_role('button', name='Verify').click()
         expect(page.get_by_text('Signed in with Phone')).to_be_visible(timeout=8000)
         sign_out(page)

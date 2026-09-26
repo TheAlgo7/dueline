@@ -13,6 +13,7 @@ import { Glyph, useCountUp } from '../ui/bits';
 import { ItemRow } from '../ui/ItemRow';
 import { go } from '../lib/router';
 import { useOnline } from '../lib/online';
+import { Loading } from '../ui/Loading';
 import { nextReminderText } from '../lib/nextReminder';
 
 function plural(n: number, one: string, many: string) {
@@ -186,9 +187,7 @@ export function Due() {
       </header>
 
       {!loaded ? (
-        <div className="center-fill">
-          <div className="spinner" />
-        </div>
+        <Loading inline />
       ) : count === 0 ? (
         <Onboarding />
       ) : (

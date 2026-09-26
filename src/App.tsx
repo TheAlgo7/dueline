@@ -14,6 +14,7 @@ import { You } from './screens/You';
 import { SheetHost } from './sheets/SheetHost';
 import { Dock } from './ui/Dock';
 import { ToastHost } from './ui/ToastHost';
+import { Loading } from './ui/Loading';
 
 /**
  * Deep links come from notifications (`?open=<cycle>&do=pay|paid|autopaid|failed`)
@@ -103,13 +104,7 @@ export function App() {
     if (user) syncDevice().catch(() => undefined);
   }, [user]);
 
-  if (!authReady) {
-    return (
-      <div className="center-fill" style={{ minHeight: '100dvh' }}>
-        <div className="spinner" />
-      </div>
-    );
-  }
+  if (!authReady) return <Loading />;
 
   return (
     <>

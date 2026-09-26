@@ -16,10 +16,15 @@ def mark(scale=1.0, bg=None, radius=0, coin=ACCENT, stem=INK, size=512):
 # Scalable favicon / in-app mark: rounded tile so it reads on light and dark tab bars.
 (OUT / 'mark.svg').write_text(mark(scale=0.82, bg=BG, radius=116), encoding='utf-8')
 
+# App icons are full-bleed squares with the mark inside the maskable safe
+# zone. Launchers shape them; nothing is transparent. (Transparent corners made
+# Samsung Internet sit the icon on a white plate, a white frame on the launch
+# screen and home screen.)
 renders = {
-    'icon-192.png': (192, mark(0.82, BG, 116, size=192)),
-    'icon-512.png': (512, mark(0.82, BG, 116, size=512)),
-    'maskable-512.png': (512, mark(0.66, BG, 0, size=512)),
+    'icon-192.png': (192, mark(0.72, BG, 0, size=192)),
+    'icon-512.png': (512, mark(0.72, BG, 0, size=512)),
+    'maskable-192.png': (192, mark(0.72, BG, 0, size=192)),
+    'maskable-512.png': (512, mark(0.72, BG, 0, size=512)),
     'apple-touch-icon.png': (180, mark(0.74, BG, 0, size=180)),
     'favicon-32.png': (32, mark(0.9, BG, 116, size=32)),
     # Android status-bar badge: alpha only, white.

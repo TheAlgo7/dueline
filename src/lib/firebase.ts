@@ -3,14 +3,24 @@ import { getAuth } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache } from 'firebase/firestore';
 
 /**
- * Public web config (the API key identifies the project; the rules do the
- * securing). Sign-in uses popups, and the firebaseapp.com handler is the one
- * Google's OAuth client trusts out of the box, so no redirect URI setup is
- * needed when Google sign-in is switched on.
+ * Installed apps can't use sign-in popups (the popup opens in a separate
+ * browser tab that never reports back), so they sign in by redirect. Browsers
+ * now partition third-party storage, so a redirect only completes when the
+ * sign-in handler is on the app's own domain: authDomain = dueline-app.web.app,
+ * whose /__/auth/handler Firebase Hosting serves. That needs
+ * https://dueline-app.web.app/__/auth/handler in the Google OAuth client's
+ * authorized redirect URIs (Google Cloud console, Credentials). Until it is
+ * there, SAME_SITE_DEFAULT stays false: popups through firebaseapp.com,
+ * which Google already trusts. VITE_SAME_SITE_AUTH=1 forces it on for testing.
  */
+const SAME_SITE_DEFAULT = true; // redirect URI added in Google Cloud on 2026-09-26
+export const SAME_SITE_AUTH = import.meta.env.VITE_SAME_SITE_AUTH ? import.meta.env.VITE_SAME_SITE_AUTH === '1' : SAME_SITE_DEFAULT;
+const HOSTED = /(^|\.)dueline-app\.web\.app$/.test(location.hostname);
+
+/** Public web config: the API key identifies the project; the rules do the securing. */
 export const firebaseConfig = {
   apiKey: 'AIzaSyDNiJkUyCF0HDDx2FhgS40r0bi9r1zoIXw',
-  authDomain: 'dueline-app.firebaseapp.com',
+  authDomain: SAME_SITE_AUTH && HOSTED ? 'dueline-app.web.app' : 'dueline-app.firebaseapp.com',
   projectId: 'dueline-app',
   storageBucket: 'dueline-app.firebasestorage.app',
   messagingSenderId: '544645738623',
