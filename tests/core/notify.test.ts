@@ -107,3 +107,10 @@ describe('ticks', () => {
     expect(toPayloads(n.slice(0, 2), NOW, '2026-09-27')).toHaveLength(2);
   });
 });
+
+describe('reminders off', () => {
+  it('an empty reminder list means no notifications at all, overdue included', () => {
+    const quiet = ob({ remind: [], recurrence: { freq: 'once', interval: 1, start: '2026-09-20' } });
+    expect(planNotices(profile, [quiet], occMap(), NOW, 30)).toEqual([]);
+  });
+});

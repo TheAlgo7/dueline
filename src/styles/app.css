@@ -13,7 +13,7 @@
   font-style: normal;
   font-display: swap;
   font-weight: 100 900;
-  src: url('../assets/fonts/inter-latin.woff2') format('woff2-variations');
+  src: url('../assets/fonts/inter-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
     U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
@@ -22,7 +22,7 @@
   font-style: normal;
   font-display: swap;
   font-weight: 100 900;
-  src: url('../assets/fonts/inter-extra.woff2') format('woff2-variations');
+  src: url('../assets/fonts/inter-extra.woff2') format('woff2');
   unicode-range: U+20B9;
 }
 
@@ -39,7 +39,8 @@
   --ink: oklch(0.965 0.006 85);
   --ink-2: oklch(0.78 0.009 80);
   --ink-3: oklch(0.62 0.01 78);
-  --ink-4: oklch(0.47 0.009 76);
+  /* Icons, placeholders, dimmed days only (3.5:1). Readable text uses --ink-3 or brighter. */
+  --ink-4: oklch(0.52 0.009 76);
 
   --accent: oklch(0.84 0.148 78);
   --accent-2: oklch(0.9 0.11 84);
@@ -155,6 +156,8 @@ h1, h2, h3, p { margin: 0; }
 }
 .hero-amount .rupee { font-size: 0.5em; font-weight: 520; color: var(--ink-3); margin-top: 0.14em; letter-spacing: 0; }
 .hero-amount.is-zero { color: var(--ink-2); }
+.hero-amount.long { font-size: clamp(44px, 13vw, 60px); }
+.hero-amount.longer { font-size: clamp(38px, 11vw, 52px); }
 .hero-caption { margin-top: 10px; font-size: 16px; color: var(--ink-2); }
 .hero-caption strong { color: var(--ink); font-weight: 600; }
 .hero-late { margin-top: 6px; font-size: 14px; color: var(--late); font-weight: 520; }
@@ -393,6 +396,10 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chips.scroll { flex-wrap: nowrap; overflow-x: auto; margin: 0 calc(var(--page-x) * -1); padding: 0 var(--page-x); scrollbar-width: none; }
 .chips.scroll::-webkit-scrollbar { display: none; }
+@media (min-width: 640px) {
+  /* A mouse can't scroll sideways; on wide screens the row just wraps. */
+  .chips.scroll { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; }
+}
 .chip {
   display: inline-flex;
   align-items: center;
@@ -511,10 +518,11 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
   @keyframes sheet-in { from { transform: translateY(40px); opacity: 0; } }
   @keyframes sheet-out { to { transform: translateY(30px); opacity: 0; } }
 }
-.sheet-grip { flex: none; padding: 10px 0 2px; display: grid; place-items: center; cursor: grab; }
+.sheet-grip { flex: none; padding: 10px 0 2px; display: grid; place-items: center; cursor: grab; touch-action: none; }
 .sheet-grip span { width: 38px; height: 5px; border-radius: 99px; background: var(--bg-3); }
 .sheet-head {
   flex: none;
+  touch-action: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -597,7 +605,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .cal-month { font-size: 20px; font-weight: 660; letter-spacing: -0.025em; }
 .cal-nav { display: flex; gap: 2px; margin-right: -10px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 4px; }
-.cal-dow { text-align: center; font-size: 12.5px; color: var(--ink-4); font-weight: 560; padding-bottom: 6px; }
+.cal-dow { text-align: center; font-size: 12.5px; color: var(--ink-3); font-weight: 560; padding-bottom: 6px; }
 .cal-day {
   position: relative;
   height: 54px;
@@ -613,7 +621,8 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
   color: var(--ink-2);
   transition: background 160ms;
 }
-.cal-day.out { color: var(--ink-4); opacity: 0.45; }
+.cal-day.out { color: var(--ink-4); }
+.cal-day.out .cal-dots { opacity: 0.6; }
 .cal-day.past { color: var(--ink-3); }
 .cal-day.today .d { color: var(--accent-ink); background: var(--accent); }
 .cal-day .d { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; }
@@ -684,7 +693,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .welcome-demo { margin-top: 34px; border-top: 1px solid var(--line); }
 .welcome-demo .row { animation-duration: 600ms; animation-delay: calc(300ms + var(--i, 0) * 90ms); }
 .welcome-actions { display: grid; gap: 10px; }
-.welcome-fine { margin-top: 16px; font-size: 13px; color: var(--ink-4); text-align: center; }
+.welcome-fine { margin-top: 16px; font-size: 13px; color: var(--ink-3); text-align: center; }
 
 .wordmark { display: flex; align-items: center; gap: 10px; font-weight: 680; font-size: 19px; letter-spacing: -0.03em; }
 
@@ -827,7 +836,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .banner strong { color: var(--ink); font-weight: 600; }
 .banner .link-btn { display: inline; padding: 0; }
 
-.offline-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-3); }
+.offline-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
 .offline-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-4); }
 
 .spinner {
@@ -850,6 +859,6 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .check-pop { animation: check-pop 420ms var(--ease) both; }
 @keyframes check-pop { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } }
 
-.footer-credit { margin-top: 36px; font-size: 13px; color: var(--ink-4); text-align: center; line-height: 1.6; }
+.footer-credit { margin-top: 36px; font-size: 13px; color: var(--ink-3); text-align: center; line-height: 1.6; }
 .footer-credit a { color: var(--ink-3); text-decoration: underline; text-decoration-color: var(--ink-4); text-underline-offset: 3px; }
 .detail-head { padding-right: 44px; }

@@ -33,7 +33,8 @@ Vercel Hobby allows 100 cron jobs per project but each may run only once a day, 
 2. plans notices per person with `src/core/notify.ts` (before, due today, evening nudge, overdue steps, AutoPay heads-up, AutoPay check),
 3. keeps what's due within 45 minutes and under 18 hours late,
 4. claims each by creating `users/{uid}/sent/{noticeId}` (create-only in the rules, so repeated ticks never double-send),
-5. pushes, folding 3+ notices into one digest, and prunes subscriptions the push service reports gone (never ones younger than 10 minutes: FCM answers 410 for a few seconds after a subscription is created).
+5. pushes, folding 3+ notices into one digest, and prunes subscriptions the push service reports gone (never ones younger than 10 minutes: FCM answers 410 for a few seconds after a subscription is created),
+6. writes a heartbeat to `system/tick`, shown on the You screen as "Reminder server last checked …" (Vercel Hobby keeps only an hour of logs), and once a day prunes `sent` entries older than a month.
 
 No service-account key exists (Spark plan). The server signs in as one email/password **reminder robot** whose uid is pinned in `firestore.rules`: it can read schedules and devices, create `sent` entries and prune devices, and cannot touch money data or payees.
 
@@ -41,8 +42,8 @@ No service-account key exists (Spark plan). The server signs in as one email/pas
 
 ```bash
 npm install
-npm test                      # 44 engine tests (recurrence, timeline, reminders, money, UPI)
-npm run test:rules            # Firestore rules against the emulator (needs JDK 21, see below)
+npm test                      # 46 engine tests (recurrence, timeline, reminders, money, UPI)
+npm run test:rules            # 9 Firestore rules tests against the emulator (needs JDK 21, see below)
 npm run dev                   # against production Firebase
 VITE_EMULATORS=1 npm run dev  # against local emulators
 ```
@@ -53,6 +54,9 @@ End to end, using `C:\tmp\webtools` (Playwright, installed Chrome):
 
 ```bash
 C:\tmp\webtools\Scripts\python.exe scripts/e2e.py            # dev server + emulators, phone-sized screenshots
+C:\tmp\webtools\Scripts\python.exe scripts/qa.py             # 30 scenarios: edits keep the schedule anchor, EMI counts, move/snooze/skip/undo,
+                                                               # failed AutoPay, stop/delete, payees, search, history, Android back, deep links,
+                                                               # offline sync, settings, guest -> email, sign out/in, guest merge, delete account
 C:\tmp\webtools\Scripts\python.exe scripts/live-check.py <CRON_SECRET>   # production: real push, real tick, dedupe, then deletes its account
 ```
 

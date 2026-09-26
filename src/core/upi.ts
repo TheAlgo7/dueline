@@ -7,7 +7,7 @@
 
 import type { Paise } from './types';
 
-const VPA = /^[a-zA-Z0-9][a-zA-Z0-9._-]{1,255}@[a-zA-Z][a-zA-Z0-9.-]{1,63}$/;
+const VPA = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,255}@[a-zA-Z][a-zA-Z0-9.-]{1,63}$/;
 
 export function isVpa(s: string | undefined | null): boolean {
   return !!s && VPA.test(s.trim());

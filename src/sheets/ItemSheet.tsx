@@ -1,12 +1,12 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { BellOff, CalendarClock, ChevronRight, Pencil, ReceiptIndianRupee, SkipForward } from 'lucide-react';
+import { BellOff, CalendarClock, CircleCheck, ChevronRight, Pencil, ReceiptIndianRupee, SkipForward } from 'lucide-react';
 import { addDays, isValidISODate, mediumDate, relative, shortDate } from '../core/dates';
 import { inr, inrDigits, parseRupees } from '../core/money';
 import { CATEGORY_LABEL } from '../core/presets';
 import { describe, lastCycle } from '../core/recurrence';
 import type { Item, OccurrenceDoc } from '../core/types';
 import { hostOf, safeUrl } from '../core/upi';
-import { confirmAutopay, moveCycle, restoreOcc, setCycleAmount, skipCycle, snoozeCycle, today, unsettle } from '../lib/actions';
+import { confirmAutopay, moveCycle, restoreOcc, setActive, setCycleAmount, skipCycle, snoozeCycle, today, unsettle } from '../lib/actions';
 import { routeText, useItem } from '../lib/select';
 import { openSheet, type OpenSheet } from '../lib/sheets';
 import { useStore } from '../lib/store';
@@ -70,13 +70,28 @@ export function ItemSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, { k
   }
 
   const ob = item.ob;
-  const needs = item.state === 'overdue' || item.state === 'today' || item.state === 'soon' || item.state === 'upcoming';
+  const needs = ob.active && (item.state === 'overdue' || item.state === 'today' || item.state === 'soon' || item.state === 'upcoming');
   const link = safeUrl(ob.url);
   const end = lastCycle(ob.recurrence);
   const cycleNote = ob.recurrence.count ? `${item.cycle} of ${ob.recurrence.count}` : null;
 
   let primary: ReactNode = null;
-  if (needs) {
+  if (!ob.active) {
+    primary = (
+      <div className="btn-row" style={{ marginTop: 22 }}>
+        <button
+          type="button"
+          className="btn secondary"
+          onClick={() => {
+            setActive(ob, true);
+            toast(`Tracking ${ob.title} again`);
+          }}
+        >
+          Start tracking again
+        </button>
+      </div>
+    );
+  } else if (needs) {
     primary = (
       <div className="btn-row" style={{ marginTop: 22 }}>
         <button type="button" className="btn primary" onClick={() => openSheet({ kind: 'pay', key: item.key })}>
@@ -139,6 +154,7 @@ export function ItemSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, { k
         )}
       </div>
       <p className="detail-status">
+        {!ob.active ? <span className="muted">You stopped tracking this. History is kept. </span> : null}
         <Status item={item} />
         {item.estimate ? ' This is the usual amount; enter the real bill when it arrives.' : ''}
       </p>
@@ -285,7 +301,13 @@ export function ItemSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, { k
             <ChevronRight size={18} className="chev" />
           </button>
         ) : null}
-        {needs ? (
+        {item.state === 'auto' ? (
+          <button type="button" className="nav-row" onClick={() => withUndo(item, `${ob.title} marked as paid`, () => confirmAutopay(item, true), 'paid')}>
+            <CircleCheck size={19} />
+            <span className="grow">It already went through</span>
+          </button>
+        ) : null}
+        {needs || item.state === 'auto' ? (
           <button type="button" className="nav-row" onClick={() => withUndo(item, `Skipped ${ob.title} this time`, () => skipCycle(item))}>
             <SkipForward size={19} />
             <span className="grow">Skip this one</span>

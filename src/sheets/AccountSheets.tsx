@@ -168,7 +168,7 @@ export function DeleteSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, {
               closeAllSheets();
               toast('Everything is deleted');
             } catch (e) {
-              setError(friendlyAuthError(e));
+              setError(navigator.onLine ? friendlyAuthError(e) : "Deleting needs a connection. Try again when you're online.");
               setBusy(false);
             }
           }}

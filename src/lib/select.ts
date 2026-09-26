@@ -25,14 +25,14 @@ export function useToday(): string {
   return today;
 }
 
-export function useItems(from: string, to: string): Item[] {
+export function useItems(from: string, to: string, orphans = false): Item[] {
   const obligations = useStore((s) => s.obligations);
   const occs = useStore((s) => s.occs);
   const check = useStore((s) => s.profile?.autopayCheck ?? 'ask');
   const today = useToday();
   return useMemo(
-    () => buildItems(obligations, occs, { today, from, to, autopayCheck: check }),
-    [obligations, occs, today, from, to, check],
+    () => buildItems(obligations, occs, { today, from, to, autopayCheck: check, orphans }),
+    [obligations, occs, today, from, to, check, orphans],
   );
 }
 
@@ -59,6 +59,7 @@ export function itemFor(key: string, s: State = getState()): Item | null {
     from,
     to,
     autopayCheck: s.profile?.autopayCheck ?? 'ask',
+    orphans: true,
   });
   return items.find((i) => i.key === key) ?? null;
 }

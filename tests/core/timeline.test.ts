@@ -109,3 +109,17 @@ describe('payday', () => {
     expect(nextPayday('2026-09-01', 1)).toBe('2026-10-01');
   });
 });
+
+describe('orphans', () => {
+  it('keeps settled cycles visible after the schedule changes or stops', () => {
+    const o = ob({ recurrence: { freq: 'months', interval: 1, start: '2026-10-07' } });
+    // Paid on the old schedule (the 5th), before it moved to the 7th.
+    const docs = occMap(occ(o, '2026-09-05', { status: 'paid', paidAmount: 150000 }));
+    const plain = buildItems([o], docs, opts).map((i) => i.due);
+    expect(plain).not.toContain('2026-09-05');
+    const withOrphans = buildItems([o], docs, { ...opts, orphans: true }).map((i) => `${i.due}:${i.state}`);
+    expect(withOrphans).toContain('2026-09-05:paid');
+    const stopped = buildItems([{ ...o, active: false }], docs, { ...opts, orphans: true }).map((i) => i.due);
+    expect(stopped).toEqual(['2026-09-05']);
+  });
+});

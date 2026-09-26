@@ -48,6 +48,9 @@ function useDeepLinks(loc: string) {
           toast(act === 'autopaid' ? `${item.ob.title} marked as paid` : `${item.ob.title} now needs you`, { tone: act === 'autopaid' ? 'paid' : 'late' });
         }
         openSheet({ kind: 'item', key: open });
+      } else if ((act === 'pay' || act === 'paid') && (item.state === 'paid' || item.state === 'autopaid' || item.state === 'skipped')) {
+        toast(item.state === 'skipped' ? `${item.ob.title} was skipped` : `${item.ob.title} is already paid`);
+        openSheet({ kind: 'item', key: open });
       } else if (act === 'pay') openSheet({ kind: 'pay', key: open });
       else if (act === 'paid') openSheet({ kind: 'paid', key: open });
       else openSheet({ kind: 'item', key: open });
@@ -61,6 +64,10 @@ function Signed() {
   const items = useDueItems();
   const badge = useMemo(() => items.some((i) => i.state === 'overdue' || i.state === 'today' || i.state === 'confirm'), [items]);
   useDeepLinks(loc);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [tab]);
 
   useEffect(() => {
     document.title = badge ? 'Dueline · something needs you' : 'Dueline';

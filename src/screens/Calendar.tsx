@@ -23,7 +23,7 @@ export function Calendar() {
   const [cursor, setCursor] = useState({ y: t.y, m: t.m });
   const [selected, setSelected] = useState(today);
   const grid = gridFor(cursor.y, cursor.m);
-  const items = useItems(grid.start, grid.end);
+  const items = useItems(grid.start, grid.end, true);
 
   const byDay = useMemo(() => {
     const map = new Map<string, Item[]>();
@@ -75,7 +75,7 @@ export function Calendar() {
         </div>
       </div>
 
-      <div className="cal-grid" role="grid" aria-label={`${monthName(cursor.m, true)} ${cursor.y}`}>
+      <div className="cal-grid" role="group" aria-label={`${monthName(cursor.m, true)} ${cursor.y}`}>
         {[1, 2, 3, 4, 5, 6, 0].map((wd) => (
           <div key={wd} className="cal-dow" aria-hidden>
             {dayName(wd).slice(0, 2)}
@@ -89,7 +89,6 @@ export function Calendar() {
             <button
               key={d}
               type="button"
-              role="gridcell"
               className={`cal-day${out ? ' out' : ''}${d < today ? ' past' : ''}${d === today ? ' today' : ''}`}
               aria-pressed={d === selected}
               aria-label={`${mediumDate(d)}${list.length ? `, ${list.length} due` : ''}`}

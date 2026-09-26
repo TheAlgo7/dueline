@@ -153,7 +153,7 @@ export function planNotices(
           needsYou: true,
         });
       }
-      for (const step of LATE_STEPS) {
+      for (const step of (ob.remind ?? []).length ? LATE_STEPS : []) {
         const date = addDays(it.due, step);
         push({
           date,

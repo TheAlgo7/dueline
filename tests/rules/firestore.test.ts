@@ -74,6 +74,16 @@ describe('owner', () => {
   });
 });
 
+describe('heartbeat', () => {
+  it('only the robot writes it, anyone signed in reads it', async () => {
+    await assertSucceeds(setDoc(doc(as(ROBOT), 'system/tick'), { at: now }));
+    await assertFails(setDoc(doc(as(ROBOT), 'system/tick'), { at: now, extra: 1 }));
+    await assertFails(setDoc(doc(as('alice'), 'system/tick'), { at: now }));
+    await assertSucceeds(getDoc(doc(as('alice'), 'system/tick')));
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'system/tick')));
+  });
+});
+
 describe('strangers', () => {
   it('see and touch nothing', async () => {
     const db = as('mallory');
@@ -97,6 +107,16 @@ describe('robot', () => {
     const db = as(ROBOT);
     await assertSucceeds(setDoc(doc(db, 'users/alice/sent/n1'), { at: now, kind: 'before' }));
     await assertFails(setDoc(doc(db, 'users/alice/sent/n1'), { at: now + 1, kind: 'before' }));
+  });
+
+  it('prunes only month-old reminder log entries', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users/alice/sent/old'), { at: now - 40 * 86400000 });
+      await setDoc(doc(ctx.firestore(), 'users/alice/sent/new'), { at: now - 2 * 86400000 });
+    });
+    const db = as(ROBOT);
+    await assertSucceeds(deleteDoc(doc(db, 'users/alice/sent/old')));
+    await assertFails(deleteDoc(doc(db, 'users/alice/sent/new')));
   });
 
   it('prunes dead devices but never writes money data or payees', async () => {

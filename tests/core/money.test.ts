@@ -47,6 +47,7 @@ describe('upi', () => {
     expect(isVpa('98xxxx1234@ybl')).toBe(true);
     expect(isVpa('rahul')).toBe(false);
     expect(isVpa('@ybl')).toBe(false);
+    expect(isVpa('r@okaxis')).toBe(true);
   });
 
   it('only opens web links', () => {

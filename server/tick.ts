@@ -23,6 +23,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   query,
   setDoc,
   where,
@@ -68,6 +69,12 @@ async function processUser(uid: string, subs: Device[], now: number, dry: boolea
   const obligations = obSnap.docs.map((d) => ({ ...(d.data() as Obligation), id: d.id }));
   const occs = new Map(occSnap.docs.map((d) => [d.id, { ...(d.data() as OccurrenceDoc), id: d.id }]));
   const already = new Set(sentSnap.docs.map((d) => d.id));
+
+  // Once a day, drop log entries older than a month (the rules allow nothing younger).
+  if (!dry && new Date(now).getUTCHours() === 21) {
+    const old = await getDocs(query(collection(userRef, 'sent'), where('at', '<', now - 31 * 86400_000), limit(200)));
+    await Promise.all(old.docs.map((d) => deleteDoc(d.ref).catch(() => undefined)));
+  }
 
   const due = dueNow(planNotices(profile, obligations, occs, now), now).filter((n) => !already.has(n.id));
   report.planned = due.length;
@@ -130,6 +137,7 @@ export async function GET(request: Request): Promise<Response> {
         users.push({ uid: uid.slice(0, 6), devices: subs.length, planned: 0, sent: 0, pushes: 0, pruned: 0, error: String((e as Error).message ?? e).slice(0, 200) });
       }
     }
+    if (!dry) await setDoc(doc(db, 'system', 'tick'), { at: Date.now() }).catch(() => undefined);
     return Response.json({ ok: true, dry, at: new Date(at).toISOString(), ms: Date.now() - started, users });
   } catch (e) {
     return Response.json({ ok: false, error: String((e as Error).message ?? e) }, { status: 500 });

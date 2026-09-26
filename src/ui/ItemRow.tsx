@@ -15,7 +15,7 @@ function Meta({ item, today }: { item: Item; today: string }) {
     case 'overdue':
       return (
         <>
-          <span className="late">{relative(d)}</span> · {route}
+          <span className="late">{relative(d)}</span> · {item.occ?.status === 'failed' ? <span className="late">AutoPay failed</span> : route}
         </>
       );
     case 'today':
@@ -45,7 +45,13 @@ function Meta({ item, today }: { item: Item; today: string }) {
         </>
       );
     case 'paid':
-      return <>Paid {item.occ?.paidOn ? shortDate(item.occ.paidOn) : ''}{item.occ?.ref ? ` · ${item.occ.ref}` : ''}</>;
+      return (
+        <>
+          Paid {item.occ?.paidOn ? (item.occ.paidOn === today ? 'today' : shortDate(item.occ.paidOn)) : ''}
+          {item.occ?.paidOn && item.occ.paidOn !== item.due ? ` · due ${shortDate(item.due)}` : ''}
+          {item.occ?.ref ? ` · ${item.occ.ref}` : ''}
+        </>
+      );
     case 'autopaid':
       return <>{item.assumed ? 'AutoPay, assumed' : 'AutoPay went through'} · {shortDate(item.due)}</>;
     case 'skipped':

@@ -82,13 +82,14 @@ function listen(user: User) {
       { includeMetadataChanges: false },
       (snap) => {
         if (!snap.exists()) {
-          // First run on this account: write the defaults with this device's timezone.
+          const now = Date.now();
+          const profile: Profile = { ...DEFAULT_PROFILE, tz: deviceTimeZone(), createdAt: now, updatedAt: now };
+          // Usable at once (offline first run included); written only once the
+          // server confirms there really is no profile yet.
+          if (!getState().profile) set({ profile });
           if (!snap.metadata.fromCache && !createdProfile) {
             createdProfile = true;
-            const now = Date.now();
-            const profile: Profile = { ...DEFAULT_PROFILE, tz: deviceTimeZone(), createdAt: now, updatedAt: now };
             setDoc(base, profile).catch(() => (createdProfile = false));
-            set({ profile });
           }
           return;
         }

@@ -146,8 +146,14 @@ export async function completeRedirect(): Promise<void> {
   }
 }
 
+/** The next person to sign in on this device starts on Due, not wherever this one left off. */
+function homeRoute() {
+  if (location.pathname !== '/' || location.search) history.replaceState(null, '', '/');
+}
+
 export async function signOutEverywhere(): Promise<void> {
   await disablePush().catch(() => undefined);
+  homeRoute();
   await signOut(auth);
 }
 
@@ -169,5 +175,6 @@ export async function deleteAccount(password?: string): Promise<void> {
   }
   await disablePush().catch(() => undefined);
   await eraseAllData();
+  homeRoute();
   await deleteUser(user);
 }

@@ -56,6 +56,7 @@ function Onboarding() {
 
 function Banners({ hasItems }: { hasItems: boolean }) {
   const user = useStore((s) => s.user);
+  useStore((s) => s.authVersion);
   const [push, setPush] = useState<PushStatus | null>(null);
   const [pushHidden, hidePush] = remember('dueline.hide.push');
   const [guestHidden, hideGuest] = remember('dueline.hide.guest');
@@ -158,14 +159,15 @@ export function Due() {
     return { ...s, month };
   }, [items, today, payday]);
   const secs = useMemo(() => {
-    const all = sections(items);
+    const all = sections(items, today);
     return all.map((s) => (s.id === 'later' ? { ...s, items: s.items.filter((i) => i.daysLeft <= 30) } : s)).filter((s) => s.items.length);
-  }, [items]);
+  }, [items, today]);
   const shown = useCountUp(summary.week.amount);
   const week = summary.week;
 
   return (
     <div className="screen">
+      <h1 className="sr">Due</h1>
       <header className="topbar">
         <div className="topbar-date">
           {longDate(today)}
@@ -191,7 +193,10 @@ export function Due() {
       ) : (
         <>
           <div className="hero">
-            <div className={`hero-amount num${week.amount === 0 ? ' is-zero' : ''}`} aria-label={inr(week.amount)}>
+            <div
+              className={`hero-amount num${week.amount === 0 ? ' is-zero' : ''}${inrDigits(week.amount).length > 10 ? ' longer' : inrDigits(week.amount).length > 7 ? ' long' : ''}`}
+              aria-label={inr(week.amount)}
+            >
               <span className="rupee">₹</span>
               {inrDigits(shown)}
             </div>

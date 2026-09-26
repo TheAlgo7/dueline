@@ -24,6 +24,12 @@ export interface BuildOptions {
   from: ISODate;
   to: ISODate;
   autopayCheck: 'ask' | 'assume';
+  /**
+   * Also include settled cycles the schedule no longer produces: payments of
+   * a stopped obligation, or cycles from before its schedule was changed.
+   * Calendars and history want these; the Due screen doesn't.
+   */
+  orphans?: boolean;
 }
 
 /** How long an unanswered AutoPay check waits before it is assumed paid. */
@@ -79,6 +85,7 @@ export function buildItems(obligations: readonly Obligation[], occs: OccMap, opt
   const out: Item[] = [];
   const seen = new Set<string>();
   const byOb = new Map<string, Obligation>();
+  const everyOb = new Map(obligations.map((o) => [o.id, o]));
   for (const ob of obligations) {
     if (!ob.active) continue;
     byOb.set(ob.id, ob);
@@ -98,7 +105,19 @@ export function buildItems(obligations: readonly Obligation[], occs: OccMap, opt
     if (!ob || occ.moveTo < opts.from || occ.moveTo > opts.to) continue;
     const idx = cyclesBetween(ob.recurrence, occ.due, occ.due)[0]?.index;
     if (idx == null) continue;
+    seen.add(occ.id);
     out.push(makeItem(ob, occ.due, idx, occ, opts));
+  }
+  if (opts.orphans) {
+    for (const occ of occs.values()) {
+      if (seen.has(occ.id) || !occ.status || occ.status === 'failed') continue;
+      const ob = everyOb.get(occ.obligationId);
+      const eff = occ.moveTo || occ.due;
+      if (!ob || eff < opts.from || eff > opts.to) continue;
+      const idx = cyclesBetween(ob.recurrence, occ.due, occ.due)[0]?.index ?? 0;
+      seen.add(occ.id);
+      out.push(makeItem(ob, occ.due, idx, occ, opts));
+    }
   }
   return out.sort(compareItems);
 }
@@ -198,11 +217,13 @@ export interface Section {
  * of their date so a tap on "Paid" has somewhere to land; past settled ones
  * drop off.
  */
-export function sections(items: readonly Item[]): Section[] {
+export function sections(items: readonly Item[], today?: ISODate): Section[] {
   const groups: Record<SectionId, Item[]> = { confirm: [], overdue: [], today: [], tomorrow: [], week: [], later: [] };
   for (const it of items) {
     if (it.state === 'confirm') groups.confirm.push(it);
     else if (it.state === 'overdue') groups.overdue.push(it);
+    // Settled today: stays in Today so the tap has a visible result.
+    else if (isDone(it.state) && it.daysLeft < 0 && today && it.occ?.paidOn === today) groups.today.push(it);
     else if (isDone(it.state) && it.daysLeft < 0) continue;
     else if (it.daysLeft <= 0) groups.today.push(it);
     else if (it.daysLeft === 1) groups.tomorrow.push(it);

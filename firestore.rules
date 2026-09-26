@@ -122,8 +122,16 @@ service cloud.firestore {
         allow read: if isOwner(uid) || isRobot();
         allow create: if isRobot() && request.resource.data.at is int;
         allow update: if false;
-        allow delete: if isOwner(uid);
+        // The robot may prune its own log once an entry is a month old.
+        allow delete: if isOwner(uid) || (isRobot() && resource.data.at < request.time.toMillis() - 2592000000);
       }
+    }
+
+    // Heartbeat: when the reminder server last ran. Readable by anyone signed
+    // in (it holds only a timestamp), written only by the robot.
+    match /system/tick {
+      allow read: if signedIn();
+      allow write: if isRobot() && request.resource.data.keys().hasOnly(['at']) && request.resource.data.at is int;
     }
 
     // The tick lists every device across users in one collection-group read.

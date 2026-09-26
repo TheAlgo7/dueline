@@ -7,6 +7,7 @@ import { describe } from '../core/recurrence';
 import type { AutoVia, Category, Freq, Method, Obligation, Recurrence } from '../core/types';
 import { isVpa, normalizeVpa, safeUrl } from '../core/upi';
 import { deleteObligation, saveObligation, savePayee, setActive, today } from '../lib/actions';
+import { nextItem } from '../lib/select';
 import { closeAllSheets, closeSheet, type OpenSheet } from '../lib/sheets';
 import { useStore } from '../lib/store';
 import { toast } from '../lib/toast';
@@ -36,6 +37,14 @@ export function ObligationSheet({ spec, depth, isTop }: { spec: Extract<OpenShee
   const addPayee = spec.kind === 'add' && spec.payeeId ? payees.find((p) => p.id === spec.payeeId) : undefined;
 
   const seed = editing ?? null;
+  // Editing shows the next unpaid cycle as "Next due", not the schedule's
+  // original first date. Saving without touching the date or the rule keeps
+  // the original anchor, so past cycles, history and EMI counts stay put.
+  const [anchor] = useState(() => {
+    if (!editing) return null;
+    const next = nextItem(editing, today());
+    return { date: next?.originalDue ?? editing.recurrence.start, index: next ? next.cycle - 1 : 0 };
+  });
   const startKind: KindPreset | null = editing ? kindFor(editing.category) : spec.kind === 'add' && spec.category ? kindFor(spec.category) : addPayee ? kindFor('person') : null;
   const base = startKind ?? { ...kindFor('person'), category: 'other' as Category };
   const rep0 = seed ? repeatOf(seed.recurrence) : repeatOf({ freq: base.freq, interval: base.interval, start: today() });
@@ -53,13 +62,13 @@ export function ObligationSheet({ spec, depth, isTop }: { spec: Extract<OpenShee
   const [payTo, setPayTo] = useState(seed?.payTo ?? addPayee?.name ?? '');
   const [savePayeeToo, setSavePayeeToo] = useState(true);
   const [url, setUrl] = useState(seed?.url ?? '');
-  const [start, setStart] = useState<string>(seed?.recurrence.start ?? (spec.kind === 'add' ? spec.due : undefined) ?? today());
+  const [start, setStart] = useState<string>(anchor?.date ?? (spec.kind === 'add' ? spec.due : undefined) ?? today());
   const [repeat, setRepeat] = useState<RepeatChoice>(rep0.choice);
   const [customN, setCustomN] = useState(String(rep0.n));
   const [customUnit, setCustomUnit] = useState<Exclude<Freq, 'once'>>(rep0.unit);
   const [eom, setEom] = useState(Boolean(seed?.recurrence.eom));
   const [endMode, setEndMode] = useState<EndMode>(seed?.recurrence.count ? 'count' : seed?.recurrence.until ? 'until' : 'never');
-  const [count, setCount] = useState(String(seed?.recurrence.count ?? 12));
+  const [count, setCount] = useState(String(seed?.recurrence.count != null ? Math.max(1, seed.recurrence.count - (anchor?.index ?? 0)) : 12));
   const [until, setUntil] = useState(seed?.recurrence.until ?? '');
   const [remind, setRemind] = useState<number[]>(seed?.remind ?? base.remind);
   const [note, setNote] = useState(seed?.note ?? '');
@@ -115,6 +124,11 @@ export function ObligationSheet({ spec, depth, isTop }: { spec: Extract<OpenShee
     if (freq === 'months' && eom) r.eom = true;
     if (freq !== 'once' && endMode === 'count') r.count = Math.max(1, Math.floor(Number(count) || 1));
     if (freq !== 'once' && endMode === 'until' && until) r.until = until;
+    const was = editing?.recurrence;
+    if (was && anchor && freq !== 'once' && was.freq === freq && was.interval === interval && Boolean(was.eom) === Boolean(r.eom) && start === anchor.date) {
+      r.start = was.start;
+      if (r.count != null) r.count += anchor.index;
+    }
     return r;
   };
 
@@ -391,7 +405,7 @@ export function ObligationSheet({ spec, depth, isTop }: { spec: Extract<OpenShee
             </div>
           ) : null}
           {repeat !== 'once' && isValidISODate(start) ? (
-            <div className="field-help">{describe(recurrence())}.</div>
+            <div className="field-help">{describe({ ...recurrence(), count: null })}.</div>
           ) : null}
         </Field>
 
@@ -462,7 +476,7 @@ export function ObligationSheet({ spec, depth, isTop }: { spec: Extract<OpenShee
               className="nav-row"
               onClick={() => {
                 setActive(editing, !editing.active);
-                closeSheet(spec.id);
+                closeAllSheets();
                 toast(editing.active ? `Stopped tracking ${editing.title}. History is kept.` : `Tracking ${editing.title} again`);
               }}
             >

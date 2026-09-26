@@ -37,7 +37,7 @@ export function Sheet({ id, closing, depth, isTop, title, label, headerRight, fo
 
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
-    ref.current?.focus({ preventScroll: true });
+    if (!ref.current?.contains(document.activeElement)) ref.current?.focus({ preventScroll: true });
     return () => prev?.focus?.({ preventScroll: true });
   }, []);
 

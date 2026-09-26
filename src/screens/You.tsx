@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { BellRing, ChevronRight, Download, History, LogOut, Smartphone, Trash2, UserRound } from 'lucide-react';
 import { hourLabel, mediumDate, ordinal, todayIn, zoned } from '../core/dates';
 import { planNotices, upcomingNotices } from '../core/notify';
@@ -85,6 +87,28 @@ function PushRow() {
         </button>
       ) : null}
     </>
+  );
+}
+
+/** When the reminder server last ran, so "are reminders working?" has an answer. */
+function LastCheck() {
+  const tz = useStore((s) => s.profile?.tz ?? 'Asia/Kolkata');
+  const [at, setAt] = useState<number | null>(null);
+  useEffect(() => {
+    getDoc(doc(db, 'system', 'tick'))
+      .then((s) => setAt((s.data()?.at as number | undefined) ?? null))
+      .catch(() => undefined);
+  }, []);
+  if (!at) return null;
+  const z = zoned(tz, at);
+  const today = todayIn(tz);
+  const time = new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: tz }).format(at);
+  const stale = Date.now() - at > 3 * 3600_000;
+  return (
+    <div className="field-help" style={{ padding: '4px 0 2px', color: stale ? 'var(--late)' : undefined }}>
+      Reminder server last checked {z.date === today ? 'today' : mediumDate(z.date, today)} at {time}
+      {stale ? '. That is longer ago than it should be.' : '.'}
+    </div>
   );
 }
 
@@ -203,6 +227,7 @@ export function You() {
             />
           </div>
           <NextReminders />
+          <LastCheck />
         </div>
       </div>
 

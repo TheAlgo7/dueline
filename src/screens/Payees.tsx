@@ -31,7 +31,7 @@ export function Payees() {
       ) : (
         <div className="rows" style={{ marginTop: 10 }}>
           {payees.map((p, i) => {
-            const linked = obligations.filter((o) => o.payeeId === p.id && o.active).length;
+            const linked = obligations.filter((o) => o.payeeId === p.id && o.active && o.recurrence.freq !== 'once').length;
             const meta = [p.upi || p.phone || 'No UPI ID yet', linked ? `${linked} recurring` : ''].filter(Boolean).join(' · ');
             return (
               <div key={p.id} className="row" style={{ ['--i' as string]: i }}>
