@@ -78,11 +78,12 @@ Manual checks: `curl -H "authorization: Bearer $CRON_SECRET" "https://dueline-ap
 
 Google is the primary button everywhere (white, Google's standard style). Email is always offered as a quiet secondary option; Phone and Apple appear on their own once Firebase reports them usable (`providerStatus()` in `src/lib/auth.ts` asks without signing anyone in or sending an SMS). Guests can start without an account and later save to Google, email, phone or Apple in place, keeping the same uid and data.
 
-Console steps still open (Gaurav):
-- **Phone:** Authentication, Settings, SMS region policy, allow India. SMS may also need the Blaze plan. Until then Firebase refuses to send codes and the button stays hidden.
-- **Apple on the web:** needs a paid Apple Developer account. Create a Services ID with return URL `https://dueline-app.firebaseapp.com/__/auth/handler`, then add the Services ID, Team ID, Key ID and private key under the Apple provider. Until then the button stays hidden.
-- **Delete the two empty projects** created by mistake during setup: `duelineapp` and `dueline-in`.
+Phone needs SMS enabled for India on a paid Firebase plan, and Apple on the web needs an Apple Developer Services ID. Neither is configured, so neither button shows.
 
 ## Icons
 
 `public/icons/*` and `public/og.png` are rendered from one SVG mark (a "d" drawn as a coin and a line) by `scripts/make-icons.py`.
+
+## Licence
+
+Copyright © 2026 Gaurav Kumar, The Algothrim. All rights reserved. The code is public to read; it is not licensed for reuse.
