@@ -108,7 +108,7 @@ The app is wired to the author's Firebase project. To run your own copy, change 
 |---|---|
 | `npm test` | The engine: recurrence, due states, reminder planning, money and UPI links |
 | `npm run test:rules` | Firestore security rules against the emulator |
-| `python scripts/qa.py` | 30 scenarios in a real browser: editing, EMIs, undo, offline sync, accounts, deep links |
+| `python scripts/qa.py` | 31 scenarios in a real browser: editing, EMIs, undo, AutoPay checks, offline sync, accounts, deep links |
 | `python scripts/signin-check.py` | Google, guest to Google, phone codes and email |
 | `python scripts/redirect-check.py` | Sign-in by redirect, as installed apps use it |
 
