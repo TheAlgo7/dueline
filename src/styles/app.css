@@ -238,6 +238,11 @@ button.stat { text-align: left; }
 .glyph.auto { background: var(--auto-soft); color: var(--auto); }
 .glyph.paid { background: var(--paid-soft); color: var(--paid); }
 .glyph.big { width: 56px; height: 56px; border-radius: 18px; }
+/* Services with no bundled mark show their initial, set like the logos: solid, tight. */
+.glyph-letter { font-size: 17px; font-weight: 720; letter-spacing: -0.02em; line-height: 1; }
+.glyph-letter.two { font-size: 14px; letter-spacing: -0.03em; }
+.glyph.big .glyph-letter { font-size: 23px; }
+.glyph.big .glyph-letter.two { font-size: 19px; }
 
 .row-main { min-width: 0; }
 .row-title {

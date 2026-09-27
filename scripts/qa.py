@@ -529,6 +529,37 @@ with sync_playwright() as p:
         page.screenshot(path=str(OUT / 'due-payday.png'))
     scenario(page, 'settings', s_you_settings)
 
+    def s_import():
+        # One payment that already exists (skipped), two new ones, one with history and a payee.
+        data = {
+            'app': 'Dueline',
+            'obligations': [
+                {'id': 'x1', 'title': 'Spotify', 'category': 'subscription', 'amountType': 'fixed', 'amount': 11900, 'handling': 'auto', 'autoVia': 'card', 'method': 'card', 'recurrence': {'freq': 'months', 'interval': 1, 'start': D(4)}, 'remind': [1], 'active': True},
+                {'id': 'x2', 'title': 'Claude Pro', 'category': 'subscription', 'amountType': 'variable', 'amount': 235000, 'handling': 'manual', 'method': 'card', 'url': 'https://claude.ai/settings/billing', 'recurrence': {'freq': 'months', 'interval': 1, 'start': D(-27)}, 'remind': [1, 0], 'active': True},
+                {'id': 'x3', 'title': 'Gym', 'category': 'person', 'amountType': 'fixed', 'amount': 150000, 'handling': 'manual', 'method': 'upi', 'payeeId': 'p9', 'upi': 'gym@okaxis', 'recurrence': {'freq': 'months', 'interval': 1, 'start': D(6)}, 'remind': [1, 0], 'active': True},
+            ],
+            'occurrences': [{'obligationId': 'x2', 'due': D(-27), 'status': 'paid', 'paidOn': D(-26), 'ref': 'R-1'}],
+            'payees': [{'id': 'p9', 'name': 'Iron Gym', 'upi': 'gym@okaxis'}],
+        }
+        f = OUT / 'import.json'
+        f.write_text(json.dumps(data), encoding='utf-8')
+        tab(page, 'You')
+        page.get_by_label('Import payments from a file').set_input_files(str(f))
+        sheet = page.get_by_role('dialog', name='Import payments')
+        expect(sheet).to_contain_text('2 new payments, 1 already in Dueline')
+        sheet.get_by_role('button', name='Add 2 payments').click()
+        assert 'Added 2 payments' in toast(page)
+        tab(page, 'Due')
+        expect(rows(page, 'Claude Pro').first.locator('.glyph[data-brand="Claude"] svg')).to_have_count(1)
+        expect(rows(page, 'Gym').first).to_be_visible()
+        obs = obligations(state['uid'])
+        claude = next(i for i, o in obs.items() if o['title'] == 'Claude Pro')
+        assert occurrences(state['uid'])[f"{claude}_{D(-27).replace('-', '')}"]['status'] == 'paid'
+        assert sum(1 for o in obs.values() if o['title'] == 'Spotify') == 1
+        gym = next(o for o in obs.values() if o['title'] == 'Gym')
+        assert gym.get('payeeId') in docs(state['uid'], 'payees'), 'payee should be linked'
+    scenario(page, 'import', s_import)
+
     def s_create_account():
         tab(page, 'You')
         tap(page, page.get_by_role('button', name='Use email or another way'))

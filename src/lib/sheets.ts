@@ -4,6 +4,7 @@
  */
 
 import { useSyncExternalStore } from 'react';
+import type { ImportPlan } from '../core/importer';
 import type { Category } from '../core/types';
 
 export type SheetSpec =
@@ -15,6 +16,7 @@ export type SheetSpec =
   | { kind: 'payee'; id?: string }
   | { kind: 'search' }
   | { kind: 'history' }
+  | { kind: 'import'; plan: ImportPlan }
   | { kind: 'account'; mode?: 'signin' | 'create'; method?: 'email' | 'phone' }
   | { kind: 'delete' }
   | { kind: 'install' };

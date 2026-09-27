@@ -52,7 +52,8 @@ Dueline never moves money. It hands you to your own UPI app, bank or biller, the
 - **Bills that change.** Card and electricity bills carry an estimate until the real amount arrives.
 - **Calm reminders.** A morning reminder, an evening nudge only if something due today is still unpaid, a few overdue nudges, then quiet. Three or more at once arrive as one notification.
 - **Works offline.** An installable PWA with a local-first cache: add, pay and undo on a train, and it syncs later.
-- **Private by design.** No bank logins, no card numbers, no UPI PIN. Your data is yours to export or delete completely.
+- **Recognisable at a glance.** Spotify, Claude, Netflix, Jio and thirty-odd other services show their own mark, drawn in Dueline's state colours and bundled with the app, so no icon service learns what you subscribe to.
+- **Private by design.** No bank logins, no card numbers, no UPI PIN. Your data is yours: export it, import it into another account, or delete it completely.
 - **Sign in your way.** Google first, or email. Or start as a guest and save to an account later without losing anything.
 
 ## How it works
@@ -77,6 +78,7 @@ flowchart LR
 | Layer | Choice |
 |---|---|
 | App | React 19, Vite, TypeScript, a hand-written service worker |
+| Icons | Lucide, and Simple Icons for service marks (the trademarks belong to their owners) |
 | Data | Firebase Authentication and Firestore with offline persistence |
 | Reminders | Vercel Functions in Mumbai, `web-push`, Web Push with VAPID |
 | Hosting | Firebase Hosting |
@@ -108,7 +110,7 @@ The app is wired to the author's Firebase project. To run your own copy, change 
 |---|---|
 | `npm test` | The engine: recurrence, due states, reminder planning, money and UPI links |
 | `npm run test:rules` | Firestore security rules against the emulator |
-| `python scripts/qa.py` | 31 scenarios in a real browser: editing, EMIs, undo, AutoPay checks, offline sync, accounts, deep links |
+| `python scripts/qa.py` | 32 scenarios in a real browser: editing, EMIs, undo, AutoPay checks, import, offline sync, accounts, deep links |
 | `python scripts/signin-check.py` | Google, guest to Google, phone codes and email |
 | `python scripts/redirect-check.py` | Sign-in by redirect, as installed apps use it |
 

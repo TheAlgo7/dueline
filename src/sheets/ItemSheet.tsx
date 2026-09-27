@@ -13,6 +13,7 @@ import { openSheet, type OpenSheet } from '../lib/sheets';
 import { useStore } from '../lib/store';
 import { toast } from '../lib/toast';
 import { Glyph, toneFor } from '../ui/bits';
+import { brandFor } from '../ui/brands';
 import { MoneyInput, moneyText } from '../ui/controls';
 import { Sheet } from '../ui/Sheet';
 
@@ -137,7 +138,7 @@ export function ItemSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, { k
   return (
     <Sheet id={spec.id} closing={spec.closing} depth={depth} isTop={isTop} label={ob.title}>
       <div className="detail-head">
-        <Glyph category={ob.category} tone={toneFor(item)} big done={confirmedPaid(item)} />
+        <Glyph category={ob.category} tone={toneFor(item)} big done={confirmedPaid(item)} brand={brandFor(ob)} />
         <div style={{ minWidth: 0 }}>
           <h2 className="detail-title">{ob.title}</h2>
           <p className="detail-sub">

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { Category, Item } from '../core/types';
 import { inrDigits } from '../core/money';
+import type { Brand } from './brands';
 
 export const CATEGORY_ICON: Record<Category, LucideIcon> = {
   card: CreditCard,
@@ -54,10 +55,26 @@ export function toneFor(item: Item): Tone {
   }
 }
 
-export function Glyph({ category, tone = 'neutral', big, done }: { category: Category; tone?: Tone; big?: boolean; done?: boolean }) {
+export function Glyph({ category, tone = 'neutral', big, done, brand }: { category: Category; tone?: Tone; big?: boolean; done?: boolean; brand?: Brand | null }) {
+  const cls = `glyph${tone !== 'neutral' ? ` ${tone}` : ''}${big ? ' big' : ''}`;
+  // A settled payment shows the tick, whatever the service.
+  if (brand && !done) {
+    const size = big ? 23 : 17;
+    return (
+      <span className={cls} aria-hidden data-brand={brand.name}>
+        {brand.path ? (
+          <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+            <path d={brand.path} />
+          </svg>
+        ) : (
+          <span className={`glyph-letter${brand.letter.length > 1 ? ' two' : ''}`}>{brand.letter}</span>
+        )}
+      </span>
+    );
+  }
   const Icon = done ? Check : CATEGORY_ICON[category] ?? CircleDot;
   return (
-    <span className={`glyph${tone !== 'neutral' ? ` ${tone}` : ''}${big ? ' big' : ''}`} aria-hidden>
+    <span className={cls} aria-hidden>
       <Icon size={big ? 24 : 19} strokeWidth={done ? 2.6 : 1.9} className={done ? 'check-pop' : undefined} />
     </span>
   );

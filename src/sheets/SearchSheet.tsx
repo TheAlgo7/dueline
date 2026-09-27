@@ -6,6 +6,7 @@ import { nextItem, routeText, useToday } from '../lib/select';
 import { openSheet, type OpenSheet } from '../lib/sheets';
 import { useStore } from '../lib/store';
 import { Glyph } from '../ui/bits';
+import { brandFor } from '../ui/brands';
 import { Sheet } from '../ui/Sheet';
 
 export function SearchSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, { kind: 'search' }>; depth: number; isTop: boolean }) {
@@ -53,7 +54,7 @@ export function SearchSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, {
               aria-label={ob.title}
               onClick={() => (next ? openSheet({ kind: 'item', key: next.key }) : openSheet({ kind: 'edit', obligationId: ob.id }))}
             />
-            <Glyph category={ob.category} />
+            <Glyph category={ob.category} brand={brandFor(ob)} />
             <div className="row-main">
               <div className="row-title">{ob.title}</div>
               <div className="row-meta">

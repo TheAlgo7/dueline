@@ -1,6 +1,7 @@
 import { useSheets } from '../lib/sheets';
 import { AccountSheet, DeleteSheet, InstallSheet } from './AccountSheets';
 import { HistorySheet } from './HistorySheet';
+import { ImportSheet } from './ImportSheet';
 import { ItemSheet } from './ItemSheet';
 import { ObligationSheet } from './ObligationSheet';
 import { PaidSheet } from './PaidSheet';
@@ -33,6 +34,8 @@ export function SheetHost({ signedIn }: { signedIn: boolean }) {
             return <SearchSheet key={s.id} spec={s} {...common} />;
           case 'history':
             return <HistorySheet key={s.id} spec={s} {...common} />;
+          case 'import':
+            return <ImportSheet key={s.id} spec={s} {...common} />;
           case 'account':
             return <AccountSheet key={s.id} spec={s} {...common} />;
           case 'delete':

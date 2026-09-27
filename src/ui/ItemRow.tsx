@@ -8,6 +8,7 @@ import { openSheet } from '../lib/sheets';
 import { toast } from '../lib/toast';
 import { routeText, useToday } from '../lib/select';
 import { Glyph, toneFor } from './bits';
+import { brandFor } from './brands';
 
 function Meta({ item, today }: { item: Item; today: string }) {
   const route = routeText(item.ob);
@@ -94,7 +95,7 @@ export function ItemRow({ item, index = 0, showDate, confirmInline }: { item: It
         aria-label={`${item.ob.title}, ${noAmount ? 'amount pending' : inr(item.amount)}, ${relative(item.daysLeft)}`}
         onClick={() => openSheet({ kind: 'item', key: item.key })}
       />
-      <Glyph category={item.ob.category} tone={toneFor(item)} done={confirmedPaid(item)} />
+      <Glyph category={item.ob.category} tone={toneFor(item)} done={confirmedPaid(item)} brand={brandFor(item.ob)} />
       <div className="row-main">
         <div className="row-title">{item.ob.title}</div>
         <div className="row-meta">

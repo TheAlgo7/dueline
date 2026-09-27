@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { BellRing, ChevronRight, Download, History, LogOut, Smartphone, Trash2, UserRound } from 'lucide-react';
+import { BellRing, ChevronRight, Download, History, LogOut, Smartphone, Trash2, Upload, UserRound } from 'lucide-react';
 import { hourLabel, mediumDate, ordinal, todayIn, zoned } from '../core/dates';
+import { planImport } from '../core/importer';
 import { planNotices, upcomingNotices } from '../core/notify';
+import { newId } from '../lib/ids';
 import { exportData, updateProfile } from '../lib/actions';
 import { friendlyAuthError, providerLabel, signInWithGoogle, signOutEverywhere } from '../lib/auth';
 import { GoogleButton } from '../ui/SignIn';
 import { disablePush, enablePush, isIOS, isStandalone, pushStatus, sendTestPush, type PushStatus } from '../lib/push';
 import { openSheet } from '../lib/sheets';
-import { useStore } from '../lib/store';
+import { getState, useStore } from '../lib/store';
 import { toast } from '../lib/toast';
 import { Seg, Switch, ToggleRow } from '../ui/controls';
 import { installAvailable, promptInstall, useInstallable } from '../lib/install';
@@ -322,6 +324,34 @@ export function You() {
             <span className="grow">Export my data</span>
             <span className="value">JSON</span>
           </button>
+          <label className="nav-row" style={{ cursor: 'pointer' }}>
+            <Upload size={19} className="muted" />
+            <span className="grow">Import payments</span>
+            <span className="value">JSON</span>
+            <input
+              type="file"
+              accept=".json,application/json"
+              aria-label="Import payments from a file"
+              style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+              onChange={async (e) => {
+                const input = e.currentTarget;
+                const file = input.files?.[0];
+                input.value = '';
+                if (!file) return;
+                let raw: unknown;
+                try {
+                  raw = JSON.parse(await file.text());
+                } catch {
+                  toast('That file isn\'t readable JSON.', { tone: 'late' });
+                  return;
+                }
+                const { obligations, payees } = getState();
+                const plan = planImport(raw, { obligations, payees }, newId);
+                if ('error' in plan) toast(plan.error, { tone: 'late' });
+                else openSheet({ kind: 'import', plan });
+              }}
+            />
+          </label>
           {!guest ? (
             <button
               type="button"

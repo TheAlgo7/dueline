@@ -7,6 +7,7 @@
 
 import { addDoc, collection, deleteDoc, doc, getDocs, setDoc, writeBatch } from 'firebase/firestore';
 import { todayIn } from '../core/dates';
+import type { ImportPlan } from '../core/importer';
 import { occId } from '../core/timeline';
 import type { Item, Obligation, OccurrenceDoc, Paise, Payee, Profile } from '../core/types';
 import { db } from './firebase';
@@ -242,6 +243,24 @@ export async function eraseAllData() {
     }
   }
   await deleteDoc(base);
+}
+
+/** Writes a checked import (core/importer). Payments already here are skipped. Returns how many were added. */
+export function applyImport(plan: ImportPlan): number {
+  const base = userDoc();
+  const fresh = plan.obligations.filter((o) => !o.duplicate);
+  const writes: Array<[string, string, object]> = [
+    ...plan.payees.map((p) => ['payees', p.id, p.data] as [string, string, object]),
+    ...fresh.map((o) => ['obligations', o.id, o.data] as [string, string, object]),
+    ...plan.occurrences.map((o) => ['occurrences', o.id, o.data] as [string, string, object]),
+  ];
+  for (let i = 0; i < writes.length; i += 400) {
+    const batch = writeBatch(db);
+    for (const [col, id, data] of writes.slice(i, i + 400)) batch.set(doc(base, col, id), data);
+    background(batch.commit(), 'import');
+  }
+  if (fresh.length) event('imported', { count: fresh.length });
+  return fresh.length;
 }
 
 /** Copies a guest's data into the account just signed into (ids are random, so nothing collides). */
