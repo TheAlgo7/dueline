@@ -36,6 +36,7 @@ import { dueNow, planNotices, toPayloads, type Notice } from '../src/core/notify
 import { DEFAULT_PROFILE, type Obligation, type OccurrenceDoc, type Profile } from '../src/core/types';
 import { sendPush, type Subscription } from './push';
 import { robot } from './robot';
+import { API_VERSION, stamp } from './version';
 
 interface UserReport {
   uid: string;
@@ -132,6 +133,10 @@ async function processUser(uid: string, subs: Device[], now: number, dry: boolea
 }
 
 export async function GET(request: Request): Promise<Response> {
+  return stamp(await tick(request));
+}
+
+async function tick(request: Request): Promise<Response> {
   if (!authorized(request)) return new Response('Unauthorized', { status: 401 });
   const url = new URL(request.url);
   const dry = url.searchParams.get('dry') === '1';
@@ -158,7 +163,7 @@ export async function GET(request: Request): Promise<Response> {
       }
     }
     if (!dry) await setDoc(doc(db, 'system', 'tick'), { at: Date.now() }).catch(() => undefined);
-    return Response.json({ ok: true, dry, at: new Date(at).toISOString(), ms: Date.now() - started, users });
+    return Response.json({ ok: true, version: API_VERSION, dry, at: new Date(at).toISOString(), ms: Date.now() - started, users });
   } catch (e) {
     return Response.json({ ok: false, error: String((e as Error).message ?? e) }, { status: 500 });
   }

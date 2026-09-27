@@ -19294,6 +19294,13 @@ function robot() {
   return ready;
 }
 
+// server/version.ts
+var API_VERSION = true ? "d02a004" : "dev";
+function stamp(res) {
+  res.headers.set("x-dueline-api", API_VERSION);
+  return res;
+}
+
 // server/tick.ts
 function authorized(request) {
   const secret = process.env.CRON_SECRET;
@@ -19362,6 +19369,9 @@ async function processUser(uid, subs, now, dry) {
   return report;
 }
 async function GET(request) {
+  return stamp(await tick(request));
+}
+async function tick(request) {
   if (!authorized(request)) return new Response("Unauthorized", { status: 401 });
   const url = new URL(request.url);
   const dry = url.searchParams.get("dry") === "1";
@@ -19388,7 +19398,7 @@ async function GET(request) {
       }
     }
     if (!dry) await setDoc(doc(db, "system", "tick"), { at: Date.now() }).catch(() => void 0);
-    return Response.json({ ok: true, dry, at: new Date(at).toISOString(), ms: Date.now() - started, users });
+    return Response.json({ ok: true, version: API_VERSION, dry, at: new Date(at).toISOString(), ms: Date.now() - started, users });
   } catch (e) {
     return Response.json({ ok: false, error: String(e.message ?? e) }, { status: 500 });
   }

@@ -17628,6 +17628,13 @@ async function sendPush(sub, payload, urgency = "normal") {
   }
 }
 
+// server/version.ts
+var API_VERSION = true ? "d02a004" : "dev";
+function stamp(res) {
+  res.headers.set("x-dueline-api", API_VERSION);
+  return res;
+}
+
 // server/test-push.ts
 var JWKS = createRemoteJWKSet(
   new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com")
@@ -17649,9 +17656,12 @@ function cors(request) {
   } : {};
 }
 function OPTIONS(request) {
-  return new Response(null, { status: 204, headers: cors(request) });
+  return stamp(new Response(null, { status: 204, headers: cors(request) }));
 }
 async function POST(request) {
+  return stamp(await send(request));
+}
+async function send(request) {
   const headers = cors(request);
   const fail2 = (status, error) => Response.json({ ok: false, error }, { status, headers });
   let body;

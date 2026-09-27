@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import type { Category, Item } from '../core/types';
 import { inrDigits } from '../core/money';
-import type { Brand } from './brands';
+import type { Mark } from './marks';
 
 export const CATEGORY_ICON: Record<Category, LucideIcon> = {
   card: CreditCard,
@@ -55,26 +55,26 @@ export function toneFor(item: Item): Tone {
   }
 }
 
-export function Glyph({ category, tone = 'neutral', big, done, brand }: { category: Category; tone?: Tone; big?: boolean; done?: boolean; brand?: Brand | null }) {
+export function Glyph({ category, tone = 'neutral', big, done, mark }: { category: Category; tone?: Tone; big?: boolean; done?: boolean; mark?: Mark | null }) {
   const cls = `glyph${tone !== 'neutral' ? ` ${tone}` : ''}${big ? ' big' : ''}`;
-  // A settled payment shows the tick, whatever the service.
-  if (brand && !done) {
+  // A settled payment shows the tick, whatever it is for.
+  if (mark && !done && !mark.Icon) {
     const size = big ? 23 : 17;
     return (
-      <span className={cls} aria-hidden data-brand={brand.name}>
-        {brand.path ? (
+      <span className={cls} aria-hidden data-mark={mark.name}>
+        {mark.path ? (
           <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-            <path d={brand.path} />
+            <path d={mark.path} />
           </svg>
         ) : (
-          <span className={`glyph-letter${brand.letter.length > 1 ? ' two' : ''}`}>{brand.letter}</span>
+          <span className={`glyph-letter${mark.letter.length > 1 ? ' two' : ''}`}>{mark.letter}</span>
         )}
       </span>
     );
   }
-  const Icon = done ? Check : CATEGORY_ICON[category] ?? CircleDot;
+  const Icon = done ? Check : mark?.Icon ?? CATEGORY_ICON[category] ?? CircleDot;
   return (
-    <span className={cls} aria-hidden>
+    <span className={cls} aria-hidden data-mark={!done && mark ? mark.name : undefined}>
       <Icon size={big ? 24 : 19} strokeWidth={done ? 2.6 : 1.9} className={done ? 'check-pop' : undefined} />
     </span>
   );

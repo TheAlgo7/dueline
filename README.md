@@ -52,7 +52,7 @@ Dueline never moves money. It hands you to your own UPI app, bank or biller, the
 - **Bills that change.** Card and electricity bills carry an estimate until the real amount arrives.
 - **Calm reminders.** A morning reminder, an evening nudge only if something due today is still unpaid, a few overdue nudges, then quiet. Three or more at once arrive as one notification.
 - **Works offline.** An installable PWA with a local-first cache: add, pay and undo on a train, and it syncs later.
-- **Recognisable at a glance.** Spotify, Claude, Netflix, Jio and thirty-odd other services show their own mark, drawn in Dueline's state colours and bundled with the app, so no icon service learns what you subscribe to.
+- **Recognisable at a glance.** Spotify, Claude, Netflix, Jio and thirty-odd other services show their own mark, drawn in Dueline's state colours and bundled with the app, so no icon service learns what you subscribe to. Everyday payments get a matching icon from the words people use for them: parking, the maid, doodh wala, tuition, the gas cylinder.
 - **Private by design.** No bank logins, no card numbers, no UPI PIN. Your data is yours: export it, import it into another account, or delete it completely.
 - **Sign in your way.** Google first, or email. Or start as a guest and save to an account later without losing anything.
 
@@ -141,6 +141,12 @@ npm run deploy:api     # bundle server/ and deploy the Vercel functions
 ```
 
 The API reads `DUELINE_ROBOT_EMAIL`, `DUELINE_ROBOT_PASSWORD`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` and `CRON_SECRET` from its environment. None of them are in this repository.
+
+Every API response carries an `x-dueline-api` header with a hash of the server's sources, and `npm run build:api` prints the hash your working tree would deploy, so you can check what production is running:
+
+```bash
+curl -sI https://dueline-api.vercel.app/api/tick | grep x-dueline-api
+```
 
 ## Privacy and security
 

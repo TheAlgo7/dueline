@@ -5,8 +5,8 @@
  * import can never write something the app would choke on later.
  *
  * Everything gets a fresh id (two accounts can import the same file), and a
- * payment already in the account under the same name is left alone, so
- * importing twice adds nothing the second time.
+ * payment already in the account (same name, account, UPI ID and kind of
+ * schedule) is left alone, so importing twice adds nothing the second time.
  */
 
 import { occId } from './timeline';
@@ -126,21 +126,29 @@ export function planImport(
   }
   const plan: ImportPlan = { obligations: [], occurrences: [], payees: [], rejected: 0 };
 
-  // Payees first, reusing one already here with the same UPI ID or name.
+  // Payees first. One already here is reused only on the same UPI ID, or failing
+  // that the same phone number: two different Rahuls share a name, not an account.
   const payeeIds = new Map<string, string>();
+  const digits = (s?: string) => (s ?? '').replace(/\D/g, '').slice(-10);
   for (const p of Array.isArray(raw.payees) ? raw.payees : []) {
     const data = isObj(p) ? cleanPayee(p, now) : null;
     if (!data || !isObj(p)) {
       plan.rejected++;
       continue;
     }
-    const same = existing.payees.find((e) => (data.upi && e.upi && norm(e.upi) === norm(data.upi)) || norm(e.name) === norm(data.name));
+    const same =
+      (data.upi ? existing.payees.find((e) => e.upi && norm(e.upi) === norm(data.upi!)) : undefined) ??
+      (digits(data.phone).length === 10 ? existing.payees.find((e) => digits(e.phone) === digits(data.phone)) : undefined);
     const id = same?.id ?? newId();
     if (!same) plan.payees.push({ id, data });
     if (typeof p.id === 'string') payeeIds.set(p.id, id);
   }
 
-  const taken = new Set(existing.obligations.filter((o) => o.active).map((o) => norm(o.title)));
+  // The same payment means the same name, paid the same way, on the same kind of
+  // schedule. Two "HDFC Credit Card" bills on different cards are two payments.
+  const fingerprint = (o: Pick<Obligation, 'title' | 'account' | 'upi' | 'recurrence'>) =>
+    [norm(o.title), norm(o.account ?? ''), norm(o.upi ?? ''), o.recurrence.freq, o.recurrence.interval].join('|');
+  const taken = new Set(existing.obligations.filter((o) => o.active).map(fingerprint));
   const obIds = new Map<string, string>();
   const skipped = new Set<string>();
   for (const o of raw.obligations) {
@@ -150,7 +158,8 @@ export function planImport(
       continue;
     }
     data.payeeId = data.payeeId ? payeeIds.get(data.payeeId) ?? null : null;
-    const duplicate = taken.has(norm(data.title));
+    const duplicate = taken.has(fingerprint(data));
+    taken.add(fingerprint(data)); // the same payment twice in one file counts once
     const id = newId();
     plan.obligations.push({ id, data, duplicate });
     if (typeof o.id === 'string') (duplicate ? skipped.add(o.id) : obIds.set(o.id, id));

@@ -2,7 +2,19 @@
 // deploys as-is. Bundling keeps the shared engine in src/core as the one
 // source of truth without relying on Vercel resolving TS imports across folders.
 // Run `npm run build:api` before committing server changes.
+import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync } from 'node:fs';
 import { build } from 'esbuild';
+
+// The version every response reports (see server/version.ts): a hash of what
+// goes into the bundle, line endings normalised so Windows and CI agree.
+const inputs = ['server', 'src/core']
+  .flatMap((dir) => readdirSync(dir).filter((f) => f.endsWith('.ts')).map((f) => `${dir}/${f}`))
+  .concat('package-lock.json')
+  .sort();
+const hash = createHash('sha256');
+for (const f of inputs) hash.update(f).update(readFileSync(f, 'utf8').replace(/\r\n/g, '\n'));
+const version = hash.digest('hex').slice(0, 7);
 
 const entries = ['tick', 'test-push'];
 
@@ -23,5 +35,7 @@ await build({
       'process.noDeprecation = true;',
     ].join('\n'),
   },
+  define: { __API_VERSION__: JSON.stringify(version) },
   logLevel: 'info',
 });
+console.log(`API version ${version}`);

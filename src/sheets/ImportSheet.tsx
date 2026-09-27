@@ -4,7 +4,7 @@ import { applyImport } from '../lib/actions';
 import { closeSheet, type OpenSheet } from '../lib/sheets';
 import { toast } from '../lib/toast';
 import { Glyph } from '../ui/bits';
-import { brandFor } from '../ui/brands';
+import { markFor } from '../ui/marks';
 import { Sheet } from '../ui/Sheet';
 
 /** Shows what a file would add before anything is written. */
@@ -23,7 +23,7 @@ export function ImportSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, {
       <div className="rows" style={{ marginTop: 12 }}>
         {plan.obligations.map(({ id, data, duplicate }, i) => (
           <div key={id} className={`row${duplicate ? ' done' : ''}`} style={{ ['--i' as string]: Math.min(i, 10) }}>
-            <Glyph category={data.category} tone={duplicate ? 'neutral' : data.handling === 'auto' ? 'auto' : 'accent'} brand={brandFor(data)} />
+            <Glyph category={data.category} tone={duplicate ? 'neutral' : data.handling === 'auto' ? 'auto' : 'accent'} mark={markFor(data)} />
             <div className="row-main">
               <div className="row-title">{data.title}</div>
               <div className="row-meta">

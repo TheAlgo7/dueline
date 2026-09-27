@@ -42,6 +42,19 @@ export function PaySheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, { ki
   const [amountText, setAmountText] = useState(moneyText(item?.amount ?? null));
   const amount = parseRupees(amountText);
   const [launched, setLaunched] = useState(false);
+  // After "Copy number": waiting to see the person actually switch to their UPI app.
+  const [awaitingApp, setAwaitingApp] = useState(false);
+
+  useEffect(() => {
+    if (!awaitingApp) return;
+    const onHide = () => {
+      if (document.visibilityState !== 'hidden') return;
+      setAwaitingApp(false);
+      setLaunched(true);
+    };
+    document.addEventListener('visibilitychange', onHide);
+    return () => document.removeEventListener('visibilitychange', onHide);
+  }, [awaitingApp]);
   const [back, setBack] = useState(false);
   const [showQr, setShowQr] = useState(!MOBILE);
 
@@ -167,17 +180,18 @@ export function PaySheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, { ki
         ) : (
           <>
             {payee?.phone ? (
-              // No UPI ID yet, but a number: every UPI app can pay a phone number.
+              // No UPI ID yet, but a number: if it's linked to UPI, their UPI app can find them.
+              // Copying isn't paying, so only leaving for another app counts as an attempt.
               <div className="pay-steps" style={{ marginBottom: 14 }}>
                 <p className="field-help" style={{ textAlign: 'center', margin: 0 }}>
-                  No UPI ID saved yet. Pay {name} on {payee.phone} from your UPI app, then come back here.
+                  No UPI ID saved yet. If {payee.phone} is linked to UPI, your UPI app can find {name} by that number.
                 </p>
                 <button
                   type="button"
                   className="btn primary block"
                   onClick={() => {
                     copy(payee.phone!, 'Number');
-                    setLaunched(true);
+                    setAwaitingApp(true);
                   }}
                 >
                   <Copy size={17} /> Copy number

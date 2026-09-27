@@ -551,7 +551,7 @@ with sync_playwright() as p:
         sheet.get_by_role('button', name='Add 3 payments').click()
         assert 'Added 3 payments' in toast(page)
         tab(page, 'Due')
-        expect(rows(page, 'Claude Pro').first.locator('.glyph[data-brand="Claude"] svg')).to_have_count(1)
+        expect(rows(page, 'Claude Pro').first.locator('.glyph[data-mark="Claude"] svg')).to_have_count(1)
         expect(rows(page, 'Gym').first).to_be_visible()
         obs = obligations(state['uid'])
         claude = next(i for i, o in obs.items() if o['title'] == 'Claude Pro')
@@ -562,9 +562,18 @@ with sync_playwright() as p:
         # No UPI ID yet, only a number: Pay offers the number, then asks on return.
         rows(page, 'Laundry').first.get_by_role('button', name='Pay').click()
         pay = top(page)
-        expect(pay).to_contain_text('Pay Ramesh on 9876543210')
+        expect(pay).to_contain_text('your UPI app can find Ramesh by that number')
         pay.get_by_role('button', name='Copy number').click()
-        expect(pay.get_by_text('Did the payment go through?')).to_be_visible(timeout=16000)
+        # Copying isn't paying: no question unless the app is actually left and come back to.
+        page.wait_for_timeout(13000)
+        expect(pay.get_by_text('Did the payment go through?')).to_have_count(0)
+        flip = """(v) => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => v });
+                            document.dispatchEvent(new Event('visibilitychange')); }"""
+        page.evaluate(flip, 'hidden')
+        page.wait_for_timeout(400)
+        page.evaluate(flip, 'visible')
+        page.evaluate('() => { delete document.visibilityState; }')
+        expect(pay.get_by_text('Did the payment go through?')).to_be_visible(timeout=4000)
         close_all(page)
     scenario(page, 'import', s_import)
 

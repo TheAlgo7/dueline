@@ -2,6 +2,7 @@ import { UserPlus } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { openSheet } from '../lib/sheets';
 import { Glyph } from '../ui/bits';
+import { payeeMark } from '../ui/marks';
 
 export function Payees() {
   const payees = useStore((s) => s.payees);
@@ -36,7 +37,7 @@ export function Payees() {
             return (
               <div key={p.id} className="row" style={{ ['--i' as string]: i }}>
                 <button type="button" className="row-hit" aria-label={p.name} onClick={() => openSheet({ kind: 'payee', id: p.id })} />
-                <Glyph category="person" />
+                <Glyph category="person" mark={payeeMark(p, obligations)} />
                 <div className="row-main">
                   <div className="row-title">{p.name}</div>
                   <div className="row-meta">{meta}</div>

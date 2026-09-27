@@ -6,7 +6,7 @@ import { nextItem, routeText, useToday } from '../lib/select';
 import { openSheet, type OpenSheet } from '../lib/sheets';
 import { useStore } from '../lib/store';
 import { Glyph } from '../ui/bits';
-import { brandFor } from '../ui/brands';
+import { markFor, payeeMark } from '../ui/marks';
 import { Sheet } from '../ui/Sheet';
 
 export function SearchSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, { kind: 'search' }>; depth: number; isTop: boolean }) {
@@ -54,7 +54,7 @@ export function SearchSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, {
               aria-label={ob.title}
               onClick={() => (next ? openSheet({ kind: 'item', key: next.key }) : openSheet({ kind: 'edit', obligationId: ob.id }))}
             />
-            <Glyph category={ob.category} brand={brandFor(ob)} />
+            <Glyph category={ob.category} mark={markFor(ob)} />
             <div className="row-main">
               <div className="row-title">{ob.title}</div>
               <div className="row-meta">
@@ -71,7 +71,7 @@ export function SearchSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, {
         {results.ps.map((p) => (
           <div key={p.id} className="row">
             <button type="button" className="row-hit" aria-label={p.name} onClick={() => openSheet({ kind: 'payee', id: p.id })} />
-            <Glyph category="person" />
+            <Glyph category="person" mark={payeeMark(p, obligations)} />
             <div className="row-main">
               <div className="row-title">{p.name}</div>
               <div className="row-meta">Payee{p.upi ? ` · ${p.upi}` : ''}</div>

@@ -10,6 +10,7 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { doc, getDoc } from 'firebase/firestore/lite';
 import { FIREBASE_CONFIG, robot } from './robot';
 import { sendPush, type Subscription } from './push';
+import { stamp } from './version';
 
 const JWKS = createRemoteJWKSet(
   new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'),
@@ -36,10 +37,14 @@ function cors(request: Request): Record<string, string> {
 }
 
 export function OPTIONS(request: Request): Response {
-  return new Response(null, { status: 204, headers: cors(request) });
+  return stamp(new Response(null, { status: 204, headers: cors(request) }));
 }
 
 export async function POST(request: Request): Promise<Response> {
+  return stamp(await send(request));
+}
+
+async function send(request: Request): Promise<Response> {
   const headers = cors(request);
   const fail = (status: number, error: string) => Response.json({ ok: false, error }, { status, headers });
   let body: { idToken?: string; deviceId?: string };
