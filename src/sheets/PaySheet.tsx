@@ -166,11 +166,36 @@ export function PaySheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, { ki
           </>
         ) : (
           <>
-            <Field label="Their UPI ID" help="Save it once and Pay fills everything in from then on.">
+            {payee?.phone ? (
+              // No UPI ID yet, but a number: every UPI app can pay a phone number.
+              <div className="pay-steps" style={{ marginBottom: 14 }}>
+                <p className="field-help" style={{ textAlign: 'center', margin: 0 }}>
+                  No UPI ID saved yet. Pay {name} on {payee.phone} from your UPI app, then come back here.
+                </p>
+                <button
+                  type="button"
+                  className="btn primary block"
+                  onClick={() => {
+                    copy(payee.phone!, 'Number');
+                    setLaunched(true);
+                  }}
+                >
+                  <Copy size={17} /> Copy number
+                </button>
+              </div>
+            ) : null}
+            <Field
+              label="Their UPI ID"
+              help={
+                payee?.phone
+                  ? 'After you pay, your UPI app shows it in that payment\'s details. Save it once and Pay fills everything in from then on.'
+                  : 'Save it once and Pay fills everything in from then on.'
+              }
+            >
               <input className="input" placeholder="name@bank" value={vpaText} inputMode="email" autoCapitalize="off" spellCheck={false} onChange={(e) => setVpaText(e.target.value)} />
             </Field>
             <div className="pay-steps">
-              <button type="button" className="btn primary block" onClick={saveVpa} disabled={!isVpa(vpaText)}>
+              <button type="button" className={`btn ${payee?.phone ? 'secondary' : 'primary'} block`} onClick={saveVpa} disabled={!isVpa(vpaText)}>
                 Save UPI ID
               </button>
             </div>
