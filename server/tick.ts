@@ -10,10 +10,12 @@
  *   4. claims each by creating `sent/{id}` (create-only in the rules, so a
  *      concurrent or repeated tick loses the race and sends nothing),
  *   5. pushes to every device, pruning subscriptions the push service says
- *      are gone.
+ *      are gone,
+ *   6. releases the claims if no push reached any device (a timeout, a 429,
+ *      a push service having a bad minute), so the next tick tries again.
  *
  * Missed ticks self-heal: anything not yet sent and under 18 hours late goes
- * out on the next run.
+ * out on the next run, so a failing push service gets at most one try an hour.
  */
 
 import {
@@ -25,6 +27,7 @@ import {
   getDocs,
   limit,
   query,
+  serverTimestamp,
   setDoc,
   where,
 } from 'firebase/firestore/lite';
@@ -41,6 +44,8 @@ interface UserReport {
   sent: number;
   pushes: number;
   pruned: number;
+  /** Claims given back because no push got through; the next tick retries them. */
+  released?: number;
   error?: string;
 }
 
@@ -84,7 +89,7 @@ async function processUser(uid: string, subs: Device[], now: number, dry: boolea
   await Promise.all(
     due.map(async (n) => {
       try {
-        await setDoc(doc(userRef, 'sent', n.id), { at: now, kind: n.kind, item: n.itemKey, fireAt: n.fireAt });
+        await setDoc(doc(userRef, 'sent', n.id), { at: now, kind: n.kind, item: n.itemKey, fireAt: n.fireAt, claimedAt: serverTimestamp() });
         claimed.push(n);
       } catch {
         // Another tick claimed it first.
@@ -96,17 +101,32 @@ async function processUser(uid: string, subs: Device[], now: number, dry: boolea
   if (!claimed.length) return report;
 
   const payloads = toPayloads(claimed, now, todayIn(profile.tz, now));
+  const urgent = claimed.some((n) => n.needsYou && (n.kind === 'due' || n.kind === 'late' || n.kind === 'evening'));
+  let retryable = 0;
   for (const sub of subs) {
     for (const p of payloads) {
-      const urgent = claimed.some((n) => n.needsYou && (n.kind === 'due' || n.kind === 'late' || n.kind === 'evening'));
       const r = await sendPush(sub, p, urgent ? 'high' : 'normal');
       if (r.ok) report.pushes++;
       else if (r.gone && Date.now() - sub.createdAt > PRUNE_GRACE_MS) {
         await deleteDoc(doc(userRef, 'devices', sub.id)).catch(() => undefined);
         report.pruned++;
         break;
-      } else report.error = `${r.status ?? ''} ${r.error}`.trim();
+      } else {
+        retryable++;
+        report.error = `${r.status ?? ''} ${r.error}`.trim();
+      }
     }
+  }
+
+  // Nothing reached any device, but a device is still there to try again:
+  // give the claims back. If only some devices got it, keep them; a second
+  // copy on the phone that already buzzed is worse than a missed laptop.
+  if (!report.pushes && retryable) {
+    const back = await Promise.all(
+      claimed.map((n) => deleteDoc(doc(userRef, 'sent', n.id)).then(() => 1, () => 0)),
+    );
+    report.released = back.reduce<number>((s, x) => s + x, 0);
+    report.sent -= report.released;
   }
   return report;
 }

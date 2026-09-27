@@ -44,7 +44,7 @@ function useDeepLinks(loc: string) {
     }
     setTimeout(() => {
       if (act === 'autopaid' || act === 'failed') {
-        if (item.state === 'confirm' || item.state === 'auto') {
+        if (item.state === 'confirm' || item.state === 'auto' || item.assumed) {
           confirmAutopay(item, act === 'autopaid');
           toast(act === 'autopaid' ? `${item.ob.title} marked as paid` : `${item.ob.title} now needs you`, { tone: act === 'autopaid' ? 'paid' : 'late' });
         }

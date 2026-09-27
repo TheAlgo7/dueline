@@ -13,7 +13,7 @@ Family and friends first, then anyone in India who juggles cards, subscriptions 
 ## Principles
 
 1. **Needs you vs handled.** Every cycle is either something you must do or something already happening. The home number is only what needs you in the next 7 days.
-2. **Expected is not confirmed.** An AutoPay is announced before and asked about after. The app never pretends money moved.
+2. **Expected is not confirmed.** An AutoPay is announced before and asked about after. After a week without an answer it is shown as assumed, which clears it from the to-do list but never counts it as paid. The app never pretends money moved.
 3. **Handoff, not custody.** Pay opens your UPI app with the amount filled in, a QR on a laptop, or the biller's page. No PIN, no card number, no account number required.
 4. **Calm.** One morning reminder, one evening nudge only if something due today is unpaid, overdue steps at 1, 3, 7 and 14 days, then quiet. Three or more at once become one digest. Coral for late, never alarm red.
 5. **Manual first.** No bank, email or SMS access to be useful. Privacy is a feature: rules-enforced per-person data, export anytime, delete means delete.
@@ -26,6 +26,6 @@ Fixed and variable amounts (estimates until the bill arrives), one-off and recur
 ## Later, deliberately
 
 - Smart intake: statement emails, Android SMS/notification parsing (native territory), known-biller links.
-- Shared obligations (split rent with a flatmate), a household view.
+- A household view for visibility (a parent pays the electricity, you want to see it's done). Not splitting money between people: that is what Settld is for, and Dueline stays about money leaving your side.
 - Bharat Connect / BBPS integration only if this ever becomes a business.
 - Light theme.

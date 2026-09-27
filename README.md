@@ -46,7 +46,7 @@ Dueline never moves money. It hands you to your own UPI app, bank or biller, the
 ## Features
 
 - **Needs you, or handled.** The headline number is only what needs you in the next 7 days. AutoPays sit in their own quieter colour.
-- **Expected is not confirmed.** When an AutoPay date passes, Dueline asks whether it went through instead of assuming it did.
+- **Expected is not confirmed.** When an AutoPay date passes, Dueline asks whether it went through. If a week goes by without an answer it stops asking and marks it assumed, never paid: assumed AutoPays stay out of paid totals and history, and one tap still confirms or flags them.
 - **Pay in one tap.** UPI opens your UPI app with the payee and amount filled in, a laptop shows a QR code, bills open the biller's page, cash is one tap to mark paid.
 - **Real Indian schedules.** Monthly (including the last day of the month), quarterly, yearly, every N days for 28-day recharges, and EMIs that end after a set number of payments.
 - **Bills that change.** Card and electricity bills carry an estimate until the real amount arrives.
@@ -68,7 +68,7 @@ flowchart LR
 
 - **One model.** An obligation is the template (Parking, ₹1,500, monthly on the 1st). Its dates are computed from the schedule, never stored. A cycle gets its own record only when something happens to it (paid, skipped, moved, amount entered), so editing a schedule never rewrites history.
 - **One engine.** `src/core` is plain TypeScript with no dependencies on the browser. The app renders from it and the reminder server plans notifications from it, so what the screen says is due and what you get reminded about cannot drift apart.
-- **Reminders for ₹0.** Vercel's free plan allows many cron jobs but runs each once a day, so 24 of them, one per hour, make an hourly reminder tick. Each notice is claimed with a create-only record before it is sent, so a retried tick never sends twice.
+- **Reminders for ₹0.** Vercel's free plan allows many cron jobs but runs each once a day, so 24 of them, one per hour, make an hourly reminder tick. Each notice is claimed with a create-only record before it is sent, so a retried tick never sends twice. If the push reaches no device, the claim is released and the next hour tries again.
 - **No service-account key.** The server signs in as a single restricted account that the Firestore rules allow to read schedules and write the reminder log, and nothing else.
 - **Money is integer paise** and due dates are calendar days in the person's timezone.
 

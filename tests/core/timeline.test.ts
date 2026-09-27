@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildItems, nextPayday, sections, summarize } from '../../src/core/timeline';
+import { buildItems, confirmedPaid, nextPayday, sections, summarize } from '../../src/core/timeline';
 import { ob, occ, occMap } from './helpers';
 
 const TODAY = '2026-09-26';
@@ -47,6 +47,16 @@ describe('states', () => {
     expect(states('ask', TODAY)).toEqual(['2026-08-15:autopaid*', '2026-09-15:autopaid*', '2026-10-15:auto']);
     expect(states('ask', '2026-09-18')).toEqual(['2026-08-15:autopaid*', '2026-09-15:confirm', '2026-10-15:auto']);
     expect(states('assume', '2026-09-18')).toEqual(['2026-08-15:autopaid*', '2026-09-15:autopaid*', '2026-10-15:auto']);
+  });
+
+  it('an assumed AutoPay is never counted as paid; a confirmed one is', () => {
+    const netflix = ob({ id: 'n', title: 'Netflix', handling: 'auto', autoVia: 'card', amount: 64900, recurrence: { freq: 'months', interval: 1, start: '2026-08-15' } });
+    const items = buildItems([netflix], occMap(occ(netflix, '2026-08-15', { status: 'autopaid' })), opts);
+    expect(items.map((i) => `${i.due}:${i.state}${i.assumed ? '*' : ''}:${confirmedPaid(i)}`)).toEqual([
+      '2026-08-15:autopaid:true',
+      '2026-09-15:autopaid*:false',
+      '2026-10-15:auto:false',
+    ]);
   });
 
   it('a failed AutoPay needs you', () => {

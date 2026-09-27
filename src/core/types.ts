@@ -110,7 +110,11 @@ export interface OccurrenceDoc {
   note?: string;
   /** No reminders before this day. */
   snoozeUntil?: ISODate | null;
-  /** Snapshot of the title when it was settled, so history survives edits and deletes. */
+  /**
+   * Snapshot of the title when it was settled, so history keeps the old name
+   * after a rename. Stopping an obligation keeps its cycles; deleting it
+   * removes them (deleteObligation), which is what delete should mean.
+   */
   title?: string;
   updatedAt: number;
 }

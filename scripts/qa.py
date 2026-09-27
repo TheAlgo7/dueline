@@ -354,6 +354,20 @@ with sync_playwright() as p:
         expect(top(page).get_by_role('link', name=re.compile('Open netflix.com'))).to_be_visible()
     scenario(page, 'autopay_failed', s_autopay_failed)
 
+    def s_autopay_assumed():
+        # A week without an answer: off the to-do list, but never shown as paid, and still confirmable.
+        add(page, kind='Subscription', title='Spotify', amount=119, due=D(-10))
+        sid = next(i for i, o in obligations(state['uid']).items() if o['title'] == 'Spotify')
+        key = f"{sid}_{D(-10).replace('-', '')}"
+        page.goto(f'{BASE}/?open={key}')
+        sheet = page.get_by_role('dialog', name='Spotify')
+        expect(sheet).to_contain_text('nobody confirmed it', timeout=8000)
+        sheet.get_by_role('button', name='It went through').click()
+        settle(page, 500)
+        expect(sheet).to_contain_text('AutoPay went through')
+        assert occurrences(state['uid'])[key]['status'] == 'autopaid'
+    scenario(page, 'autopay_assumed', s_autopay_assumed)
+
     def s_stop_tracking():
         page.get_by_role('button', name='Search').click()
         top(page).get_by_label('Search').fill('Recharge')

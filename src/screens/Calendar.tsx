@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { addDays, dayName, daysInMonth, mediumDate, monthName, parts, weekday, ymd } from '../core/dates';
 import { inr } from '../core/money';
-import { needsYou } from '../core/timeline';
+import { confirmedPaid, needsYou } from '../core/timeline';
 import type { Item } from '../core/types';
 import { useItems, useToday } from '../lib/select';
 import { openSheet } from '../lib/sheets';
@@ -38,7 +38,7 @@ export function Calendar() {
   const month = useMemo(() => {
     const inMonth = items.filter((i) => i.due >= grid.first && i.due <= grid.last);
     const due = inMonth.reduce((s, i) => s + (i.state === 'skipped' ? 0 : i.amount ?? 0), 0);
-    const paid = inMonth.filter((i) => i.state === 'paid' || i.state === 'autopaid').reduce((s, i) => s + (i.amount ?? 0), 0);
+    const paid = inMonth.filter(confirmedPaid).reduce((s, i) => s + (i.amount ?? 0), 0);
     const left = inMonth.filter((i) => needsYou(i.state)).reduce((s, i) => s + (i.amount ?? 0), 0);
     return { due, paid, left };
   }, [items, grid.first, grid.last]);

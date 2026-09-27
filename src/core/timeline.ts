@@ -143,6 +143,11 @@ export function compareItems(a: Item, b: Item): number {
 
 export const needsYou = (s: ItemState) => s === 'overdue' || s === 'today' || s === 'soon' || s === 'upcoming';
 export const isDone = (s: ItemState) => s === 'paid' || s === 'autopaid' || s === 'skipped';
+/**
+ * Money we know left: paid by hand, or an AutoPay the person confirmed. An
+ * assumed AutoPay is off the to-do list but never counts as paid.
+ */
+export const confirmedPaid = (i: Pick<Item, 'state' | 'assumed'>) => i.state === 'paid' || (i.state === 'autopaid' && !i.assumed);
 
 export interface Total {
   amount: Paise;

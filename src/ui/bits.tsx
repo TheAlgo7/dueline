@@ -46,8 +46,9 @@ export function toneFor(item: Item): Tone {
     case 'confirm':
       return 'auto';
     case 'paid':
-    case 'autopaid':
       return 'paid';
+    case 'autopaid':
+      return item.assumed ? 'auto' : 'paid';
     default:
       return 'neutral';
   }

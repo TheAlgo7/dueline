@@ -17620,7 +17620,7 @@ function configure() {
 async function sendPush(sub, payload, urgency = "normal") {
   configure();
   try {
-    await import_web_push.default.sendNotification(sub, JSON.stringify(payload), { TTL: 6 * 3600, urgency });
+    await import_web_push.default.sendNotification(sub, JSON.stringify(payload), { TTL: 6 * 3600, urgency, timeout: 1e4 });
     return { ok: true };
   } catch (e) {
     const status = e.statusCode;

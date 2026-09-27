@@ -22,7 +22,8 @@ export type PushResult = { ok: true } | { ok: false; gone: boolean; status?: num
 export async function sendPush(sub: Subscription, payload: PushPayload, urgency: 'low' | 'normal' | 'high' = 'normal'): Promise<PushResult> {
   configure();
   try {
-    await webpush.sendNotification(sub, JSON.stringify(payload), { TTL: 6 * 3600, urgency });
+    // A hung push service must not stall the tick past the claim-release window.
+    await webpush.sendNotification(sub, JSON.stringify(payload), { TTL: 6 * 3600, urgency, timeout: 10_000 });
     return { ok: true };
   } catch (e) {
     const status = (e as { statusCode?: number }).statusCode;

@@ -12828,6 +12828,12 @@ var NumericMinimumTransformOperation = class extends NumericTransformOperation {
 };
 var NumericMaximumTransformOperation = class extends NumericTransformOperation {
 };
+var FieldTransform = class {
+  constructor(field, transform) {
+    this.field = field;
+    this.transform = transform;
+  }
+};
 var Precondition = class _Precondition {
   constructor(updateTime, exists) {
     this.updateTime = updateTime;
@@ -14299,6 +14305,14 @@ function parseSetData(userDataReader, methodName, targetDoc, input, hasConverter
   }
   return new ParsedSetData(new ObjectValue(updateData), fieldMask, fieldTransforms);
 }
+var ServerTimestampFieldValueImpl = class _ServerTimestampFieldValueImpl extends FieldValue {
+  _toFieldTransform(context) {
+    return new FieldTransform(context.path, new ServerTimestampTransform());
+  }
+  isEqual(other) {
+    return other instanceof _ServerTimestampFieldValueImpl;
+  }
+};
 function parseQueryValue(userDataReader, methodName, input, allowArrays = false) {
   const context = userDataReader.createContext(allowArrays ? 4 : 3, methodName);
   const parsed = parseData(input, context);
@@ -15059,6 +15073,9 @@ function deleteDoc(reference) {
     new DeleteMutation(reference._key, Precondition.none())
   ]);
 }
+function serverTimestamp() {
+  return new ServerTimestampFieldValueImpl("serverTimestamp");
+}
 
 // node_modules/@firebase/firestore/dist/lite/index.node.mjs
 var version3 = "4.17.2";
@@ -15534,7 +15551,7 @@ function configure() {
 async function sendPush(sub, payload, urgency = "normal") {
   configure();
   try {
-    await import_web_push.default.sendNotification(sub, JSON.stringify(payload), { TTL: 6 * 3600, urgency });
+    await import_web_push.default.sendNotification(sub, JSON.stringify(payload), { TTL: 6 * 3600, urgency, timeout: 1e4 });
     return { ok: true };
   } catch (e) {
     const status = e.statusCode;
@@ -19309,7 +19326,7 @@ async function processUser(uid, subs, now, dry) {
   await Promise.all(
     due.map(async (n) => {
       try {
-        await setDoc(doc(userRef, "sent", n.id), { at: now, kind: n.kind, item: n.itemKey, fireAt: n.fireAt });
+        await setDoc(doc(userRef, "sent", n.id), { at: now, kind: n.kind, item: n.itemKey, fireAt: n.fireAt, claimedAt: serverTimestamp() });
         claimed.push(n);
       } catch {
       }
@@ -19319,17 +19336,28 @@ async function processUser(uid, subs, now, dry) {
   report.sent = claimed.length;
   if (!claimed.length) return report;
   const payloads = toPayloads(claimed, now, todayIn(profile.tz, now));
+  const urgent = claimed.some((n) => n.needsYou && (n.kind === "due" || n.kind === "late" || n.kind === "evening"));
+  let retryable = 0;
   for (const sub of subs) {
     for (const p of payloads) {
-      const urgent = claimed.some((n) => n.needsYou && (n.kind === "due" || n.kind === "late" || n.kind === "evening"));
       const r = await sendPush(sub, p, urgent ? "high" : "normal");
       if (r.ok) report.pushes++;
       else if (r.gone && Date.now() - sub.createdAt > PRUNE_GRACE_MS) {
         await deleteDoc(doc(userRef, "devices", sub.id)).catch(() => void 0);
         report.pruned++;
         break;
-      } else report.error = `${r.status ?? ""} ${r.error}`.trim();
+      } else {
+        retryable++;
+        report.error = `${r.status ?? ""} ${r.error}`.trim();
+      }
     }
+  }
+  if (!report.pushes && retryable) {
+    const back = await Promise.all(
+      claimed.map((n) => deleteDoc(doc(userRef, "sent", n.id)).then(() => 1, () => 0))
+    );
+    report.released = back.reduce((s, x) => s + x, 0);
+    report.sent -= report.released;
   }
   return report;
 }

@@ -4,6 +4,7 @@ import { addDays, isValidISODate, mediumDate, relative, shortDate } from '../cor
 import { inr, inrDigits, parseRupees } from '../core/money';
 import { CATEGORY_LABEL } from '../core/presets';
 import { describe, lastCycle } from '../core/recurrence';
+import { confirmedPaid } from '../core/timeline';
 import type { Item, OccurrenceDoc } from '../core/types';
 import { hostOf, safeUrl } from '../core/upi';
 import { confirmAutopay, moveCycle, restoreOcc, setActive, setCycleAmount, skipCycle, snoozeCycle, today, unsettle } from '../lib/actions';
@@ -34,7 +35,9 @@ function Status({ item }: { item: Item }) {
     case 'paid':
       return <><span className="paid">Paid</span>{item.occ?.paidOn ? ` on ${mediumDate(item.occ.paidOn, today())}` : ''}.</>;
     case 'autopaid':
-      return <><span className="paid">{item.assumed ? 'AutoPay, assumed paid' : 'AutoPay went through'}</span> on {when}.</>;
+      return item.assumed
+        ? <><span className="auto">AutoPay</span> was due {when}. Assumed paid, but nobody confirmed it.</>
+        : <><span className="paid">AutoPay went through</span> on {when}.</>;
     case 'skipped':
       return <>Skipped. It was due {when}.</>;
   }
@@ -102,7 +105,7 @@ export function ItemSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, { k
         </button>
       </div>
     );
-  } else if (item.state === 'confirm') {
+  } else if (item.state === 'confirm' || item.assumed) {
     primary = (
       <div className="btn-row" style={{ marginTop: 22 }}>
         <button type="button" className="btn paid" onClick={() => withUndo(item, `${ob.title} marked as paid`, () => confirmAutopay(item, true), 'paid')}>
@@ -134,7 +137,7 @@ export function ItemSheet({ spec, depth, isTop }: { spec: Extract<OpenSheet, { k
   return (
     <Sheet id={spec.id} closing={spec.closing} depth={depth} isTop={isTop} label={ob.title}>
       <div className="detail-head">
-        <Glyph category={ob.category} tone={toneFor(item)} big done={item.state === 'paid' || item.state === 'autopaid'} />
+        <Glyph category={ob.category} tone={toneFor(item)} big done={confirmedPaid(item)} />
         <div style={{ minWidth: 0 }}>
           <h2 className="detail-title">{ob.title}</h2>
           <p className="detail-sub">

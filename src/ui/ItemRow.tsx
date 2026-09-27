@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { mediumDate, relative, shortDate } from '../core/dates';
 import { inr } from '../core/money';
+import { confirmedPaid } from '../core/timeline';
 import type { Item } from '../core/types';
 import { confirmAutopay } from '../lib/actions';
 import { openSheet } from '../lib/sheets';
@@ -53,7 +54,7 @@ function Meta({ item, today }: { item: Item; today: string }) {
         </>
       );
     case 'autopaid':
-      return <>{item.assumed ? 'AutoPay, assumed' : 'AutoPay went through'} · {shortDate(item.due)}</>;
+      return <>{item.assumed ? 'AutoPay, not confirmed' : 'AutoPay went through'} · {shortDate(item.due)}</>;
     case 'skipped':
       return <>Skipped · {shortDate(item.due)}</>;
   }
@@ -81,6 +82,7 @@ export function ItemRow({ item, index = 0, showDate, confirmInline }: { item: It
     );
   } else if (item.state === 'auto') side = <span className="row-tag auto">Auto</span>;
   else if (item.state === 'confirm' && !confirmInline) side = <span className="row-tag auto">Check</span>;
+  else if (item.assumed) side = <span className="row-tag auto">Assumed</span>;
   else if (item.state === 'paid' || item.state === 'autopaid') side = <span className="row-tag paid">Paid</span>;
   else if (item.state === 'skipped') side = <span className="row-tag skip">Skipped</span>;
 
@@ -92,7 +94,7 @@ export function ItemRow({ item, index = 0, showDate, confirmInline }: { item: It
         aria-label={`${item.ob.title}, ${noAmount ? 'amount pending' : inr(item.amount)}, ${relative(item.daysLeft)}`}
         onClick={() => openSheet({ kind: 'item', key: item.key })}
       />
-      <Glyph category={item.ob.category} tone={toneFor(item)} done={item.state === 'paid' || item.state === 'autopaid'} />
+      <Glyph category={item.ob.category} tone={toneFor(item)} done={confirmedPaid(item)} />
       <div className="row-main">
         <div className="row-title">{item.ob.title}</div>
         <div className="row-meta">

@@ -20,7 +20,9 @@ service cloud.firestore {
     function optPaise(d, k) { return !(k in d) || d[k] == null || paise(d[k]); }
     function isoDate(v) { return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
     function optDate(d, k) { return !(k in d) || d[k] == null || isoDate(d[k]); }
-    function stamp(d) { return d.updatedAt is int; }
+    function optBool(d, k) { return !(k in d) || d[k] is bool; }
+    function optInt(d, k, lo, hi) { return !(k in d) || d[k] == null || (d[k] is int && d[k] >= lo && d[k] <= hi); }
+    function stamp(d) { return d.updatedAt is int && optInt(d, 'createdAt', 0, 9999999999999); }
 
     function validProfile(d) {
       return d.keys().hasOnly(['name', 'tz', 'remindHour', 'evening', 'eveningHour',
@@ -35,16 +37,37 @@ service cloud.firestore {
         && stamp(d);
     }
 
+    // The reminder engine and every screen compute dates from this, so a
+    // malformed schedule would break the person's own app: check every key.
+    function validRecurrence(r) {
+      return r is map
+        && r.keys().hasOnly(['freq', 'interval', 'start', 'eom', 'until', 'count'])
+        && r.freq in ['once', 'days', 'weeks', 'months', 'years']
+        && r.interval is int && r.interval >= 1 && r.interval <= 400
+        && isoDate(r.start)
+        && optBool(r, 'eom')
+        && optDate(r, 'until')
+        && optInt(r, 'count', 1, 10000);
+    }
+
     function validObligation(d) {
-      return str(d.title, 80) && d.title.size() > 0
+      return d.keys().hasOnly(['title', 'category', 'amountType', 'amount', 'handling', 'method',
+                               'autoVia', 'account', 'payeeId', 'upi', 'payTo', 'url', 'recurrence',
+                               'remind', 'note', 'active', 'createdAt', 'updatedAt'])
+        && str(d.title, 80) && d.title.size() > 0
+        && d.category in ['card', 'rent', 'mobile', 'internet', 'electricity', 'utility',
+                          'subscription', 'emi', 'insurance', 'person', 'tax', 'other']
         && d.amountType in ['fixed', 'variable']
         && optPaise(d, 'amount')
         && d.handling in ['manual', 'auto']
         && d.method in ['upi', 'card', 'bank', 'cash', 'web']
-        && d.recurrence is map && isoDate(d.recurrence.start)
-        && d.recurrence.freq in ['once', 'days', 'weeks', 'months', 'years']
-        && d.recurrence.interval is int && d.recurrence.interval >= 1 && d.recurrence.interval <= 400
+        && (!('autoVia' in d) || d.autoVia == null || d.autoVia in ['card', 'upi', 'bank', 'wallet', 'other'])
+        && optStr(d, 'payeeId', 64)
+        && validRecurrence(d.recurrence)
+        // Days before the due date, each 0 to 30.
         && d.remind is list && d.remind.size() <= 6
+        && d.remind.hasOnly([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                             16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30])
         && d.active is bool
         && optStr(d, 'upi', 120) && optStr(d, 'url', 600) && optStr(d, 'note', 600)
         && optStr(d, 'account', 80) && optStr(d, 'payTo', 80)
@@ -53,7 +76,9 @@ service cloud.firestore {
     }
 
     function validOccurrence(d) {
-      return str(d.obligationId, 64) && isoDate(d.due)
+      return d.keys().hasOnly(['obligationId', 'due', 'moveTo', 'amount', 'status', 'paidOn',
+                               'paidAmount', 'ref', 'via', 'note', 'snoozeUntil', 'title', 'updatedAt'])
+        && str(d.obligationId, 64) && isoDate(d.due)
         && (!('status' in d) || d.status == null || d.status in ['paid', 'skipped', 'autopaid', 'failed'])
         && optPaise(d, 'amount') && optPaise(d, 'paidAmount')
         && optDate(d, 'moveTo') && optDate(d, 'paidOn') && optDate(d, 'snoozeUntil')
@@ -63,16 +88,20 @@ service cloud.firestore {
     }
 
     function validPayee(d) {
-      return str(d.name, 80) && d.name.size() > 0
+      return d.keys().hasOnly(['name', 'upi', 'phone', 'url', 'note', 'createdAt', 'updatedAt'])
+        && str(d.name, 80) && d.name.size() > 0
         && optStr(d, 'upi', 120) && optStr(d, 'phone', 20) && optStr(d, 'url', 600) && optStr(d, 'note', 600)
         && request.resource.size() < 4000
         && stamp(d);
     }
 
     function validDevice(d) {
-      return str(d.endpoint, 1000) && d.endpoint.matches('^https://.*')
-        && d.keys is map && str(d.keys.p256dh, 200) && str(d.keys.auth, 100)
+      return d.keys().hasOnly(['endpoint', 'keys', 'label', 'createdAt', 'lastSeenAt'])
+        && str(d.endpoint, 1000) && d.endpoint.matches('^https://.*')
+        && d.keys is map && d.keys.keys().hasOnly(['p256dh', 'auth'])
+        && str(d.keys.p256dh, 200) && str(d.keys.auth, 100)
         && optStr(d, 'label', 80)
+        && optInt(d, 'createdAt', 0, 9999999999999) && optInt(d, 'lastSeenAt', 0, 9999999999999)
         && request.resource.size() < 4000;
     }
 
@@ -117,13 +146,22 @@ service cloud.firestore {
 
       // Reminder log. The robot creates an entry before it pushes; the id is
       // the dedupe key, and entries can never be updated, so a second tick in
-      // the same window fails its write and sends nothing.
+      // the same window fails its write and sends nothing. claimedAt is the
+      // server's clock, so the robot cannot backdate or future-date a claim.
       match /sent/{id} {
         allow read: if isOwner(uid) || isRobot();
-        allow create: if isRobot() && request.resource.data.at is int;
+        allow create: if isRobot()
+          && request.resource.data.keys().hasOnly(['at', 'kind', 'item', 'fireAt', 'claimedAt'])
+          && request.resource.data.at is int
+          && request.resource.data.claimedAt == request.time;
         allow update: if false;
-        // The robot may prune its own log once an entry is a month old.
-        allow delete: if isOwner(uid) || (isRobot() && resource.data.at < request.time.toMillis() - 2592000000);
+        // The robot may release a claim within 15 minutes when the push
+        // reached no device (the next tick then retries it), and may prune
+        // its own log once an entry is a month old.
+        allow delete: if isOwner(uid)
+          || (isRobot() && resource.data.get('claimedAt', null) is timestamp
+              && resource.data.claimedAt > request.time - duration.value(15, 'm'))
+          || (isRobot() && resource.data.at < request.time.toMillis() - 2592000000);
       }
     }
 

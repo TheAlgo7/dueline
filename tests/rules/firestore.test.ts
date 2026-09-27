@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { collectionGroup, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import { collectionGroup, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 
 const ROBOT = readFileSync('firestore.rules', 'utf8').match(/request\.auth\.uid == '([^']+)'/)![1];
 let env: RulesTestEnvironment;
@@ -66,6 +66,32 @@ describe('owner', () => {
     await assertFails(setDoc(doc(db, 'users/alice/devices/d2'), { ...device, endpoint: 'http://evil' }));
   });
 
+  it('cannot write a schedule the engine would choke on', async () => {
+    const db = as('alice');
+    const bad = (patch: object) => setDoc(doc(db, 'users/alice/obligations/bad'), { ...ob, ...patch });
+    const rec = (patch: object) => bad({ recurrence: { ...ob.recurrence, ...patch } });
+    await assertSucceeds(bad({
+      handling: 'auto', autoVia: 'card', payeeId: null,
+      recurrence: { freq: 'months', interval: 1, start: '2026-10-31', eom: true, until: null, count: 12 },
+      remind: [30, 15, 0],
+    }));
+    await assertFails(bad({ category: 'gambling' }));
+    await assertFails(bad({ autoVia: 'crypto' }));
+    await assertFails(bad({ payeeId: 42 }));
+    await assertFails(bad({ isVerified: true }));
+    await assertFails(bad({ remind: [1, 99] }));
+    await assertFails(bad({ remind: ['1'] }));
+    await assertFails(rec({ every: 'day' }));
+    await assertFails(rec({ eom: 'yes' }));
+    await assertFails(rec({ count: 0 }));
+    await assertFails(rec({ count: 2.5 }));
+    await assertFails(rec({ until: 'next year' }));
+    await assertFails(setDoc(doc(db, 'users/alice/occurrences/o1_20261001'), { ...occ, extra: 1 }));
+    await assertFails(setDoc(doc(db, 'users/alice/payees/p1'), { name: 'Rahul', createdAt: now, updatedAt: now, pin: '1234' }));
+    await assertFails(setDoc(doc(db, 'users/alice/devices/d2'), { ...device, extra: 1 }));
+    await assertFails(setDoc(doc(db, 'users/alice/devices/d2'), { ...device, keys: { ...device.keys, other: 'z' } }));
+  });
+
   it('cannot write the reminder log or rewrite history', async () => {
     const db = as('alice');
     await assertFails(setDoc(doc(db, 'users/alice/sent/n1'), { at: now }));
@@ -103,10 +129,24 @@ describe('robot', () => {
     await assertSucceeds(getDoc(doc(db, 'users/alice/obligations/o1')));
   });
 
-  it('claims a notice exactly once', async () => {
+  it('claims a notice exactly once, on the server clock', async () => {
     const db = as(ROBOT);
-    await assertSucceeds(setDoc(doc(db, 'users/alice/sent/n1'), { at: now, kind: 'before' }));
-    await assertFails(setDoc(doc(db, 'users/alice/sent/n1'), { at: now + 1, kind: 'before' }));
+    await assertFails(setDoc(doc(db, 'users/alice/sent/n0'), { at: now, kind: 'before' }));
+    await assertFails(setDoc(doc(db, 'users/alice/sent/n0'), { at: now, kind: 'before', claimedAt: Timestamp.fromMillis(now + 86400000) }));
+    await assertSucceeds(setDoc(doc(db, 'users/alice/sent/n1'), { at: now, kind: 'before', claimedAt: serverTimestamp() }));
+    await assertFails(setDoc(doc(db, 'users/alice/sent/n1'), { at: now + 1, kind: 'before', claimedAt: serverTimestamp() }));
+  });
+
+  it('releases a fresh claim so the next tick retries, but not a stale one', async () => {
+    const db = as(ROBOT);
+    await assertSucceeds(setDoc(doc(db, 'users/alice/sent/n1'), { at: now, kind: 'due', claimedAt: serverTimestamp() }));
+    await assertSucceeds(deleteDoc(doc(db, 'users/alice/sent/n1')));
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users/alice/sent/n2'), { at: now, kind: 'due', claimedAt: Timestamp.fromMillis(Date.now() - 20 * 60000) });
+      await setDoc(doc(ctx.firestore(), 'users/alice/sent/n3'), { at: now, kind: 'due' });
+    });
+    await assertFails(deleteDoc(doc(db, 'users/alice/sent/n2')));
+    await assertFails(deleteDoc(doc(db, 'users/alice/sent/n3')));
   });
 
   it('prunes only month-old reminder log entries', async () => {
