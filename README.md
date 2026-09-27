@@ -145,7 +145,7 @@ The API reads `DUELINE_ROBOT_EMAIL`, `DUELINE_ROBOT_PASSWORD`, `VAPID_PUBLIC_KEY
 Every API response carries an `x-dueline-api` header with a hash of the server's sources, and `npm run build:api` prints the hash your working tree would deploy, so you can check what production is running:
 
 ```bash
-curl -sI https://dueline-api.vercel.app/api/tick | grep x-dueline-api
+curl -s -D - -o /dev/null https://dueline-api.vercel.app/api/tick | grep -i x-dueline-api
 ```
 
 ## Privacy and security

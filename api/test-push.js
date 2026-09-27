@@ -17629,7 +17629,7 @@ async function sendPush(sub, payload, urgency = "normal") {
 }
 
 // server/version.ts
-var API_VERSION = true ? "d02a004" : "dev";
+var API_VERSION = true ? "2cf2fe0" : "dev";
 function stamp(res) {
   res.headers.set("x-dueline-api", API_VERSION);
   return res;

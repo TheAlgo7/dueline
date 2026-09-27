@@ -5,7 +5,7 @@
  * every response carries it, and a local `npm run build:api` prints the one
  * the working tree would produce.
  *
- *   curl -sI https://dueline-api.vercel.app/api/tick | grep x-dueline-api
+ *   curl -s -D - -o /dev/null https://dueline-api.vercel.app/api/tick | grep -i x-dueline-api
  */
 
 declare const __API_VERSION__: string | undefined;
