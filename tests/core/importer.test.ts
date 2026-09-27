@@ -54,7 +54,8 @@ describe('planImport', () => {
 describe('brandFor', () => {
   it('matches by name first, then by link, and never guesses', () => {
     expect(brandFor({ title: 'Spotify Premium' })?.name).toBe('Spotify');
-    expect(brandFor({ title: 'ChatGPT Plus' })).toMatchObject({ name: 'ChatGPT', path: null, letter: 'G' });
+    expect(brandFor({ title: 'ChatGPT Plus' })?.path).toBeTruthy();
+    expect(brandFor({ title: 'Canva Pro' })).toMatchObject({ name: 'Canva', path: null, letter: 'C' });
     expect(brandFor({ title: 'Claude Pro' })?.path).toBeTruthy();
     expect(brandFor({ title: 'Music', url: 'https://music.youtube.com/paid' })?.name).toBe('YouTube Music');
     expect(brandFor({ title: 'Jio recharge' })?.name).toBe('Jio');
