@@ -1,0 +1,60 @@
+{
+  "packageId": "com.thealgothrim.dueline",
+  "host": "dueline-app.web.app",
+  "name": "Dueline",
+  "launcherName": "Dueline",
+  "display": "standalone",
+  "themeColor": "#090807",
+  "themeColorDark": "#000000",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#090807",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://dueline-app.web.app/icons/icon-512.png",
+  "maskableIconUrl": "https://dueline-app.web.app/icons/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "../../../Ongoing Apps Assets/Dueline/Keys/dueline-upload.jks",
+    "alias": "dueline-upload"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Add a payment",
+      "shortName": "Add",
+      "url": "https://dueline-app.web.app/?add=1",
+      "chosenIconUrl": "https://dueline-app.web.app/icons/icon-192.png"
+    },
+    {
+      "name": "Calendar",
+      "shortName": "Calendar",
+      "url": "https://dueline-app.web.app/calendar",
+      "chosenIconUrl": "https://dueline-app.web.app/icons/icon-192.png"
+    }
+  ],
+  "generatorApp": "unknown",
+  "webManifestUrl": "https://dueline-app.web.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": false,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://dueline-app.web.app/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "1.0.0"
+}

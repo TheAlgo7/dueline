@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.thealgothrim.dueline",
+      "sha256_cert_fingerprints": [
+        "DD:50:65:29:CA:A1:38:D2:BB:4F:FF:51:F2:2C:BE:2A:D4:21:06:C1:4F:82:E2:94:B9:0A:14:BE:D4:F6:C5:F1"
+      ]
+    }
+  }
+]

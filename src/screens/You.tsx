@@ -378,6 +378,8 @@ export function You() {
         <a href="https://thealgothrim.com" target="_blank" rel="noopener">
           The Algothrim
         </a>
+        {' · '}
+        <a href="/privacy">Privacy</a>
       </p>
     </div>
   );

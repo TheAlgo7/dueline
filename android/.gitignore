@@ -1,0 +1,13 @@
+# Build output and local machine files. The upload key lives outside the repo
+# (Work/Ongoing Apps Assets/Dueline/Keys) and must never be committed.
+.gradle/
+build/
+app/build/
+local.properties
+*.aab
+*.apk
+*.idsig
+*.jks
+*.keystore
+.idea/
+manifest-checksum.txt
