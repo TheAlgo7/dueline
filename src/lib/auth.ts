@@ -27,6 +27,7 @@ import {
   linkWithPopup,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
+  reauthenticateWithRedirect,
   sendPasswordResetEmail,
   signInAnonymously,
   signInWithCredential,
@@ -34,6 +35,7 @@ import {
   signInWithPopup,
   signOut,
   type AuthCredential,
+  type User,
   type UserCredential,
 } from 'firebase/auth';
 import { SAME_SITE_AUTH, auth, firebaseConfig } from './firebase';
@@ -344,6 +346,7 @@ export async function completeRedirect(): Promise<void> {
     const result = await getRedirectResult(auth);
     if (import.meta.env.DEV) console.info('[auth] redirect result', result ? result.operationType : 'none');
     if (!result) return;
+    if (result.operationType === 'reauthenticate' && (await resumePendingDelete())) return;
     refreshUser();
     toast(wasGuest() ? 'Signed in' : 'Signed in. Your payments sync to this account.', { tone: 'paid' });
   } catch (e) {
@@ -372,26 +375,93 @@ export async function signOutEverywhere(): Promise<void> {
   await signOut(auth);
 }
 
-/**
- * Deletes every document, then the login itself. Firebase asks for a recent
- * sign-in before deleting an account; email accounts pass their password,
- * Google accounts get a popup.
- */
-export async function deleteAccount(password?: string): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) return;
-  if (!user.isAnonymous) {
-    const hasPassword = user.providerData.some((p) => p.providerId === 'password');
-    if (hasPassword && user.email && password) {
-      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
-    } else if (user.providerData.some((p) => p.providerId === 'google.com')) {
-      await reauthenticateWithPopup(user, google());
-    } else if (user.providerData.some((p) => p.providerId === 'apple.com')) {
-      await reauthenticateWithPopup(user, apple());
-    }
-  }
+const PENDING_DELETE = 'dueline.pendingDelete';
+
+/** Firebase only deletes an account signed into in the last few minutes. */
+function signedInRecently(user: User): boolean {
+  if (import.meta.env.DEV && localStorage.getItem('dueline.forceReauth') === '1') return false; // redirect-check.py
+  const at = Date.parse(user.metadata.lastSignInTime ?? '');
+  return Number.isFinite(at) && Date.now() - at < 4 * 60_000;
+}
+
+async function eraseAndDelete(user: User): Promise<void> {
   await disablePush().catch(() => undefined);
   await eraseAllData();
   homeRoute();
   await deleteUser(user);
+}
+
+/**
+ * Deletes every document, then the login itself. Firebase asks for a recent
+ * sign-in first: email accounts pass their password, Google and Apple
+ * accounts confirm with the provider. Installed apps can't open popups, so
+ * there the confirmation is a redirect and completeRedirect() finishes the
+ * deletion when the app comes back.
+ */
+export async function deleteAccount(password?: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) return;
+  if (!user.isAnonymous && !signedInRecently(user)) {
+    const hasPassword = user.providerData.some((p) => p.providerId === 'password');
+    const provider = user.providerData.some((p) => p.providerId === 'google.com')
+      ? google()
+      : user.providerData.some((p) => p.providerId === 'apple.com')
+        ? apple()
+        : null;
+    if (hasPassword && user.email && password) {
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+    } else if (provider && useRedirect()) {
+      try {
+        localStorage.setItem(PENDING_DELETE, user.uid);
+      } catch {
+        // Without storage the deletion can't resume; the popup path below is the fallback.
+      }
+      if (localStorage.getItem(PENDING_DELETE) === user.uid) {
+        await reauthenticateWithRedirect(user, provider);
+        return;
+      }
+      await reauthenticateWithPopup(user, provider);
+    } else if (provider) {
+      await reauthenticateWithPopup(user, provider);
+    }
+  }
+  await eraseAndDelete(user);
+}
+
+/** Resolves once the store has picked up this user, so eraseAllData knows whose data to erase. */
+function storeHasUser(id: string): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      unsub();
+      clearTimeout(timer);
+      resolve();
+    };
+    const check = () => {
+      if (getState().user?.uid === id) done();
+    };
+    const unsub = subscribe(check);
+    const timer = setTimeout(done, 8000);
+    check();
+  });
+}
+
+/** Finishes a deletion that left for the provider to confirm the sign-in. */
+async function resumePendingDelete(): Promise<boolean> {
+  let pending: string | null = null;
+  try {
+    pending = localStorage.getItem(PENDING_DELETE);
+    localStorage.removeItem(PENDING_DELETE);
+  } catch {
+    return false;
+  }
+  const user = auth.currentUser;
+  if (!pending || !user || user.uid !== pending) return false;
+  await storeHasUser(user.uid);
+  try {
+    await eraseAndDelete(user);
+    toast('Everything is deleted');
+  } catch (e) {
+    toast(navigator.onLine ? friendlyAuthError(e) : "Deleting needs a connection. Try again when you're online.", { tone: 'late' });
+  }
+  return true;
 }

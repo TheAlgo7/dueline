@@ -112,7 +112,7 @@ The app is wired to the author's Firebase project. To run your own copy, change 
 | `npm run test:rules` | Firestore security rules against the emulator |
 | `python scripts/qa.py` | 32 scenarios in a real browser: editing, EMIs, undo, AutoPay checks, import, offline sync, accounts, deep links |
 | `python scripts/signin-check.py` | Google, guest to Google, phone codes and email |
-| `python scripts/redirect-check.py` | Sign-in by redirect, as installed apps use it |
+| `python scripts/redirect-check.py` | Sign-in and account deletion by redirect, as installed apps use them |
 
 The browser scripts need Python with Playwright and a running dev server and emulators.
 
