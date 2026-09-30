@@ -5,6 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.thealgothrim.dueline",
       "sha256_cert_fingerprints": [
+        "30:5C:AA:1A:73:1B:02:4C:A2:60:4C:C8:39:3E:95:A9:EE:29:C8:F9:D1:D4:93:8B:DD:C7:9E:B9:3B:DB:85:32",
+        "D4:CC:8D:C7:E0:FE:F3:0D:E2:4A:F9:BD:10:E9:37:9F:10:73:30:1A:DE:97:2D:B9:E1:2A:49:02:E5:3F:14:F5",
         "DD:50:65:29:CA:A1:38:D2:BB:4F:FF:51:F2:2C:BE:2A:D4:21:06:C1:4F:82:E2:94:B9:0A:14:BE:D4:F6:C5:F1"
       ]
     }
